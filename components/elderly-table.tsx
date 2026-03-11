@@ -222,12 +222,12 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
         <List className="w-4 h-4 text-muted-foreground" />
         <span className="text-muted-foreground">列表</span>
         <span className="text-muted-foreground">/</span>
-        <span className="font-medium">候鸟老人信息</span>
+        <span className="text-muted-foreground">候鸟老人信息</span>
       </div>
 
       {/* Search Section */}
       <div className="bg-muted/30 rounded-lg p-4 mb-4">
-        <h3 className="text-base font-medium mb-4">候鸟老人信息查询</h3>
+        <h3 className="text-base font-medium mb-4 text-foreground/70">候鸟老人信息查询</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground whitespace-nowrap w-16">
@@ -243,8 +243,8 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground whitespace-nowrap w-16">
-              原住地：
+            <label className="text-sm text-muted-foreground whitespace-nowrap w-20">
+              原籍社区：
             </label>
             <Input
               placeholder=""
@@ -360,30 +360,40 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="text-center">姓名</TableHead>
-              <TableHead className="text-center">年龄</TableHead>
-              <TableHead className="text-center">性别</TableHead>
-              <TableHead className="text-center">原住地</TableHead>
-              <TableHead className="text-center">原住地社区</TableHead>
-              <TableHead className="text-center">手机号</TableHead>
-              <TableHead className="text-center">当前状态</TableHead>
-              <TableHead className="text-center">迁入地社区</TableHead>
-              <TableHead className="text-center w-32">志愿等级</TableHead>
-              <TableHead className="text-center">操作</TableHead>
+              <TableHead className="text-center text-foreground/70">姓名</TableHead>
+              <TableHead className="text-center text-foreground/70">年龄</TableHead>
+              <TableHead className="text-center text-foreground/70">性别</TableHead>
+              <TableHead className="text-center text-foreground/70">原住地</TableHead>
+              <TableHead className="text-center text-foreground/70">原住地社区</TableHead>
+              <TableHead className="text-center text-foreground/70">手机号</TableHead>
+              <TableHead className="text-center text-foreground/70">当前状态</TableHead>
+              <TableHead className="text-center text-foreground/70">迁入地社区</TableHead>
+              <TableHead className="text-center w-32 text-foreground/70">志愿等级</TableHead>
+              <TableHead className="text-center text-foreground/70">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {mockData.map((person) => (
               <TableRow key={person.id}>
-                <TableCell className="text-center">{person.name}</TableCell>
-                <TableCell className="text-center">{person.age}</TableCell>
-                <TableCell className="text-center">{person.gender}</TableCell>
-                <TableCell className="text-center">{person.hometown}</TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center text-sm text-muted-foreground">
+                  {person.name}
+                </TableCell>
+                <TableCell className="text-center text-sm text-muted-foreground">
+                  {person.age}
+                </TableCell>
+                <TableCell className="text-center text-sm text-muted-foreground">
+                  {person.gender}
+                </TableCell>
+                <TableCell className="text-center text-sm text-muted-foreground">
+                  {person.hometown}
+                </TableCell>
+                <TableCell className="text-center text-sm text-muted-foreground">
                   {person.originalCommunity}
                 </TableCell>
-                <TableCell className="text-center">{person.phone}</TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center text-sm text-muted-foreground">
+                  {person.phone}
+                </TableCell>
+                <TableCell className="text-center text-sm text-muted-foreground">
                   <span
                     className={cn(
                       "inline-block px-2 py-0.5 rounded text-xs",
@@ -393,11 +403,11 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
                     {person.status}
                   </span>
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center text-sm text-muted-foreground">
                   {person.targetCommunity}
                 </TableCell>
-                <TableCell className="text-center">
-                  <span className={cn("text-xs", getVolunteerLevelStyle(person.volunteerLevel))}>
+                <TableCell className="text-center text-sm text-muted-foreground">
+                  <span className={cn("text-sm", getVolunteerLevelStyle(person.volunteerLevel))}>
                     {person.volunteerLevel}
                   </span>
                 </TableCell>

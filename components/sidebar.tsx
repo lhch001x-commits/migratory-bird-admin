@@ -125,12 +125,12 @@ export function Sidebar({ activeMenu, onMenuChange }: SidebarProps) {
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-base transition-colors",
                   isActive
-                    ? "text-foreground font-semibold"
+                    ? "text-foreground/70 font-semibold"
                     : "text-muted-foreground hover:bg-muted"
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span className={cn(isActive && "text-foreground")}>
+                  <span className={cn(isActive && "text-foreground/70")}>
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
