@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { ElderlyTable } from "@/components/elderly-table"
 import { ElderlyEditSheet } from "@/components/elderly-edit-sheet"
 import { MessagePage } from "@/components/message-page"
+import { toast } from "@/hooks/use-toast"
 
 export type MenuItem = {
   id: string
@@ -41,6 +42,13 @@ export type ElderlyPerson = {
 }
 
 export default function Home() {
+  useEffect(() => {
+    toast({
+      description: "服务端数据维护中，请先预览前端交互",
+      duration: 3000,
+    })
+  }, [])
+
   const [activeMenu, setActiveMenu] = useState("migrate-in")
   const [editingPerson, setEditingPerson] = useState<ElderlyPerson | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
