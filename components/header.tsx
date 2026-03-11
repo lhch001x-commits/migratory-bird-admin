@@ -17,7 +17,7 @@ export function Header({ onMessageClick }: HeaderProps) {
   const [unreadCount] = useState(15)
 
   return (
-    <header className="h-14 bg-card border-b border-border px-6 flex items-center justify-end gap-6">
+    <header className="h-14 bg-card border-b border-border pl-6 pr-14 flex items-center justify-end gap-6">
       {/* Location */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <MapPin className="w-4 h-4" />

@@ -92,7 +92,7 @@ export default function Home() {
 
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
-        <p>即将推出，敬请期待</p>
+        <p>MVP2.0 版本即将推出，敬请期待</p>
       </div>
     )
   }

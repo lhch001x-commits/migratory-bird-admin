@@ -419,12 +419,12 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
                     >
                       编辑
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => handleVolunteerService(person.id)}
                       className="text-primary hover:underline text-sm"
                     >
                       志愿服务
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => handleDelete(person.id)}
                       className="text-destructive hover:underline text-sm"

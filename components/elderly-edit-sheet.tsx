@@ -52,11 +52,7 @@ export function ElderlyEditSheet({
       setFormData(person)
     } else {
       setFormData({
-        gender: "男",
-        spouseLiving: "否",
         emergencyRelation: "子女",
-        status: "待抵达",
-        healthStatus: "完全自理",
       })
     }
   }, [person, open])
@@ -131,21 +127,41 @@ export function ElderlyEditSheet({
               性别：
             </Label>
             <RadioGroup
-              value={formData.gender || "男"}
+              value={formData.gender ?? ""}
               onValueChange={(value) =>
                 setFormData({ ...formData, gender: value as "男" | "女" })
               }
               className="flex gap-4"
             >
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="男" id="male" className="border-primary text-primary" />
-                <Label htmlFor="male" className="text-sm">
+                <RadioGroupItem
+                  value="男"
+                  id="male"
+                  className="border-muted-foreground text-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"
+                />
+                <Label
+                  htmlFor="male"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.gender === "男" && "text-primary"
+                  )}
+                >
                   男
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="女" id="female" className="border-primary text-primary" />
-                <Label htmlFor="female" className="text-sm">
+                <RadioGroupItem
+                  value="女"
+                  id="female"
+                  className="border-muted-foreground text-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"
+                />
+                <Label
+                  htmlFor="female"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.gender === "女" && "text-primary"
+                  )}
+                >
                   女
                 </Label>
               </div>
@@ -168,25 +184,45 @@ export function ElderlyEditSheet({
 
           {/* Spouse Living */}
           <div className="flex items-center gap-3">
-            <Label className="w-24 text-right text-sm text-muted-foreground shrink-0">
+            <Label className="w-24 text-left text-sm text-muted-foreground shrink-0">
               是否夫妻同住：
             </Label>
             <RadioGroup
-              value={formData.spouseLiving || "否"}
+              value={formData.spouseLiving ?? ""}
               onValueChange={(value) =>
                 setFormData({ ...formData, spouseLiving: value as "是" | "否" })
               }
               className="flex gap-4"
             >
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="是" id="spouse-yes" className="border-primary text-primary" />
-                <Label htmlFor="spouse-yes" className="text-sm">
+                <RadioGroupItem
+                  value="是"
+                  id="spouse-yes"
+                  className="border-muted-foreground text-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"
+                />
+                <Label
+                  htmlFor="spouse-yes"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.spouseLiving === "是" && "text-primary"
+                  )}
+                >
                   是
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <RadioGroupItem value="否" id="spouse-no" className="border-primary text-primary" />
-                <Label htmlFor="spouse-no" className="text-sm">
+                <RadioGroupItem
+                  value="否"
+                  id="spouse-no"
+                  className="border-muted-foreground text-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"
+                />
+                <Label
+                  htmlFor="spouse-no"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.spouseLiving === "否" && "text-primary"
+                  )}
+                >
                   否
                 </Label>
               </div>
@@ -216,45 +252,51 @@ export function ElderlyEditSheet({
           )}
 
           {/* Emergency Contact */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <Label className="w-24 text-right text-sm text-muted-foreground shrink-0">
               紧急联系人：
             </Label>
-            <div className="flex-1 flex items-center gap-2">
-              <Input
-                value={formData.emergencyContact || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, emergencyContact: e.target.value })
-                }
-                placeholder=""
-                className="w-24"
-              />
-              <Select
-                value={formData.emergencyRelation || "子女"}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    emergencyRelation: value as "子女" | "朋友" | "配偶",
-                  })
-                }
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="子女">子女</SelectItem>
-                  <SelectItem value="朋友">朋友</SelectItem>
-                  <SelectItem value="配偶">配偶</SelectItem>
-                </SelectContent>
-              </Select>
-              <Label className="text-sm text-muted-foreground">联系方式：</Label>
-              <Input
-                value={formData.emergencyPhone || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, emergencyPhone: e.target.value })
-                }
-                className="flex-1"
-              />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={formData.emergencyContact || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, emergencyContact: e.target.value })
+                  }
+                  placeholder=""
+                  className="w-24"
+                />
+                <Select
+                  value={formData.emergencyRelation || "子女"}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      emergencyRelation: value as "子女" | "朋友" | "配偶",
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="子女">子女</SelectItem>
+                    <SelectItem value="朋友">朋友</SelectItem>
+                    <SelectItem value="配偶">配偶</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm text-muted-foreground shrink-0">
+                  紧急联系人电话：
+                </Label>
+                <Input
+                  value={formData.emergencyPhone || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, emergencyPhone: e.target.value })
+                  }
+                  className="flex-1"
+                />
+              </div>
             </div>
           </div>
 
@@ -264,7 +306,7 @@ export function ElderlyEditSheet({
               当前状态：
             </Label>
             <RadioGroup
-              value={formData.status || "待抵达"}
+              value={formData.status ?? ""}
               onValueChange={(value) =>
                 setFormData({
                   ...formData,
@@ -275,19 +317,37 @@ export function ElderlyEditSheet({
             >
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="居住中" id="status-living" className="border-primary text-primary" />
-                <Label htmlFor="status-living" className="text-sm">
+                <Label
+                  htmlFor="status-living"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.status === "居住中" && "text-primary"
+                  )}
+                >
                   居住中
                 </Label>
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="待抵达" id="status-pending" className="border-primary text-primary" />
-                <Label htmlFor="status-pending" className="text-sm">
+                <Label
+                  htmlFor="status-pending"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.status === "待抵达" && "text-primary"
+                  )}
+                >
                   待抵达
                 </Label>
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="已返乡" id="status-returned" className="border-primary text-primary" />
-                <Label htmlFor="status-returned" className="text-sm">
+                <Label
+                  htmlFor="status-returned"
+                  className={cn(
+                    "text-sm text-muted-foreground",
+                    formData.status === "已返乡" && "text-primary"
+                  )}
+                >
                   已返乡
                 </Label>
               </div>
@@ -434,7 +494,7 @@ export function ElderlyEditSheet({
             </Label>
             <div className="flex-1 space-y-2">
               <RadioGroup
-                value={formData.healthStatus || "完全自理"}
+                value={formData.healthStatus ?? ""}
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
@@ -447,9 +507,15 @@ export function ElderlyEditSheet({
                   <RadioGroupItem
                     value="完全自理"
                     id="health-full"
-                    className="border-primary text-primary"
+                    className="border-muted-foreground text-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"
                   />
-                  <Label htmlFor="health-full" className="text-sm text-primary">
+                  <Label
+                    htmlFor="health-full"
+                    className={cn(
+                      "text-sm text-muted-foreground",
+                      formData.healthStatus === "完全自理" && "text-primary"
+                    )}
+                  >
                     完全自理
                   </Label>
                 </div>
@@ -457,36 +523,64 @@ export function ElderlyEditSheet({
                   <RadioGroupItem
                     value="半自理"
                     id="health-half"
-                    className="border-primary text-primary"
+                    className="border-muted-foreground text-muted-foreground data-[state=checked]:border-primary data-[state=checked]:text-primary"
                   />
-                  <Label htmlFor="health-half" className="text-sm">
+                  <Label
+                    htmlFor="health-half"
+                    className={cn(
+                      "text-sm text-muted-foreground",
+                      formData.healthStatus === "半自理" && "text-primary"
+                    )}
+                  >
                     半自理
                   </Label>
                 </div>
               </RadioGroup>
-              <p className="text-xs text-muted-foreground">
-                {formData.healthNote ||
-                  "患有高血压慢性病，对抗生素药物存在过敏现象"}
-              </p>
+              <div className="space-y-1">
+                <textarea
+                  value={formData.healthNote || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, healthNote: e.target.value })
+                  }
+                  maxLength={200}
+                  placeholder="请填写详细的身体健康状况，诸如当前患病及服药情况"
+                  className={cn(
+                    "w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm",
+                    "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none placeholder:text-foreground/30"
+                  )}
+                />
+                <div className="flex justify-end">
+                  <span className="text-xs text-muted-foreground">
+                    {(formData.healthNote || "").length}/200
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Hobbies */}
           <div className="flex items-start gap-3">
-            <Label className="w-24 text-right text-sm text-muted-foreground shrink-0 pt-2">
+            <Label className="w-24 text-left text-sm text-muted-foreground shrink-0 pt-2">
               才艺特长/兴趣爱好：
             </Label>
-            <textarea
-              value={formData.hobbies || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, hobbies: e.target.value })
-              }
-              placeholder="下象棋，打太极拳"
-              className={cn(
-                "flex-1 min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm",
-                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
-              )}
-            />
+            <div className="flex-1 space-y-1">
+              <textarea
+                value={formData.hobbies || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, hobbies: e.target.value })
+                }
+                maxLength={200}
+                className={cn(
+                  "w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm",
+                  "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+                )}
+              />
+              <div className="flex justify-end">
+                <span className="text-xs text-muted-foreground">
+                  {(formData.hobbies || "").length}/200
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
