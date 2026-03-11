@@ -123,7 +123,7 @@ export function Sidebar({ activeMenu, onMenuChange }: SidebarProps) {
                   }
                 }}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors",
+                  "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-base transition-colors",
                   isActive
                     ? "text-foreground font-semibold"
                     : "text-muted-foreground hover:bg-muted"

@@ -48,7 +48,7 @@ export function Header({ onMessageClick }: HeaderProps) {
         <Bell className="w-4 h-4" />
         <span>消息</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+          <span className="absolute -top-[10px] left-10 min-w-[16px] h-[16px] px-1 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

@@ -227,7 +227,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
 
       {/* Search Section */}
       <div className="bg-muted/30 rounded-lg p-4 mb-4">
-        <h3 className="text-sm font-medium mb-4">候鸟老人信息查询</h3>
+        <h3 className="text-base font-medium mb-4">候鸟老人信息查询</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground whitespace-nowrap w-16">
@@ -436,7 +436,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
         </span>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            第{currentPage}页
+            {/* 第{currentPage}页 */}
             {/* / 共{totalPages}页 */}
           </span>
           <Pagination>
