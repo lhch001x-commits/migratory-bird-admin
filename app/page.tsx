@@ -44,8 +44,10 @@ export type ElderlyPerson = {
 export default function Home() {
   useEffect(() => {
     toast({
+      title: "提示",
       description: "服务端数据维护中，请先预览前端交互",
       duration: 3000,
+      variant: "destructive",
     })
   }, [])
 
