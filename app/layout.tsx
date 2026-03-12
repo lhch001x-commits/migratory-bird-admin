@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { Toaster } from '@/components/ui/toaster'
+import { AppToastProvider } from '@/components/app-toast'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -38,8 +38,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" style={{ fontSize: "90%" }}>
       <body className="font-sans antialiased">
-        {children}
-        <Toaster />
+        <AppToastProvider>{children}</AppToastProvider>
         <Analytics />
       </body>
     </html>

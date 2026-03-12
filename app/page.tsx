@@ -6,6 +6,7 @@ import { Header } from "@/components/header"
 import { ElderlyTable } from "@/components/elderly-table"
 import { ElderlyEditSheet } from "@/components/elderly-edit-sheet"
 import { MessagePage } from "@/components/message-page"
+import { useAppToast } from "@/components/app-toast"
 
 export type MenuItem = {
   id: string
@@ -45,14 +46,15 @@ export default function Home() {
   const [editingPerson, setEditingPerson] = useState<ElderlyPerson | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
-  const [showStartupNotice, setShowStartupNotice] = useState(true)
+  const { showToast } = useAppToast()
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowStartupNotice(false)
-    }, 3000)
-    return () => clearTimeout(timer)
-  }, [])
+    showToast({
+      title: "提示",
+      description: "服务端数据维护中，请先预览前端交互",
+      duration: 3000,
+    })
+  }, [showToast])
 
   const handleEdit = (person: ElderlyPerson) => {
     setEditingPerson(person)
@@ -123,18 +125,6 @@ export default function Home() {
         isNew={isAddingNew}
         onSave={handleSave}
       />
-      {showStartupNotice && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
-          <div className="pointer-events-auto rounded-md bg-black/65 text-white px-6 py-4 shadow-lg">
-            <div className="flex flex-col items-center justify-center">
-              <div className="text-sm font-semibold mb-1 text-center">提示</div>
-              <div className="text-sm text-center">
-                服务端数据维护中，请先预览前端交互
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

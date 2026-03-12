@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   Table,
   TableBody,
@@ -11,6 +11,14 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -29,6 +37,7 @@ import {
 import { Plus, Upload, Download, RotateCcw, Search, List } from "lucide-react"
 import type { ElderlyPerson } from "@/app/page"
 import { cn } from "@/lib/utils"
+import { useAppToast } from "@/components/app-toast"
 
 // Mock data for elderly people
 const mockData: ElderlyPerson[] = [
@@ -164,6 +173,9 @@ type ElderlyTableProps = {
 
 export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [people, setPeople] = useState<ElderlyPerson[]>(mockData)
+  const [deleteTarget, setDeleteTarget] = useState<ElderlyPerson | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [searchParams, setSearchParams] = useState({
     name: "",
     hometown: "",
@@ -172,6 +184,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     status: "",
     volunteerLevel: "",
   })
+  const { showToast } = useAppToast()
 
   const totalItems = 132
   const totalPages = 10
@@ -187,8 +200,16 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     })
   }
 
-  const handleDelete = (id: string) => {
-    console.log("删除:", id)
+  const requestDelete = (person: ElderlyPerson) => {
+    setDeleteTarget(person)
+  }
+
+  const handleDelete = async (id: string) => {
+    // TODO: Replace with real API request
+    // await fetch(`/api/elderly/${id}`, { method: "DELETE" })
+    await new Promise<void>((resolve) => setTimeout(resolve, 1000))
+    setPeople((prev) => prev.filter((p) => p.id !== id))
+    showToast({ description: "删除成功", duration: 3000 })
   }
 
   const handleVolunteerService = (id: string) => {
@@ -214,6 +235,28 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     }
     return "text-muted-foreground"
   }
+
+  const deleteDialogOpen = !!deleteTarget
+
+  const warningIcon = useMemo(() => {
+    return (
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-6 w-6 text-destructive"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        </svg>
+      </div>
+    )
+  }, [])
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -373,7 +416,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockData.map((person) => (
+            {people.map((person) => (
               <TableRow key={person.id}>
                 <TableCell className="text-center text-sm text-muted-foreground">
                   {person.name}
@@ -426,7 +469,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
                       志愿服务
                     </button> */}
                     <button
-                      onClick={() => handleDelete(person.id)}
+                      onClick={() => requestDelete(person)}
                       className="text-destructive hover:underline text-sm"
                     >
                       删除
@@ -492,6 +535,56 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
           </Pagination>
         </div>
       </div>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null)
+            setIsDeleting(false)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader className="items-center text-center">
+            {warningIcon}
+            <DialogTitle className="mt-2 text-base font-semibold">
+              确定要删除这条数据嘛
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              此删除操作无法撤销，有数据丢失风险，请再次确认
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              className="bg-muted text-muted-foreground hover:bg-muted/80"
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={async () => {
+                if (!deleteTarget) return
+                try {
+                  setIsDeleting(true)
+                  await handleDelete(deleteTarget.id)
+                  setDeleteTarget(null)
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
