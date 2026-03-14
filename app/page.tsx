@@ -16,14 +16,22 @@ export type MenuItem = {
 
 export type ElderlyPerson = {
   id: string
+  user_id: string
+  idCard: string
   name: string
   age: number
   gender: "男" | "女"
   hometown: string
+  originalProvince: string
+  originalCity: string
   originalCommunity: string
   phone: string
   status: "待抵达" | "居住中" | "已返乡"
+  targetProvince: string
+  targetCity: string
   targetCommunity: string
+  targetAddress: string
+  medicalInsuranceStatus: "已备案" | "未备案"
   volunteerLevel: "候鸟老年人才" | "候鸟老年志愿者" | "普通候鸟老人"
   spouseLiving?: "是" | "否"
   spouseName?: string
@@ -32,10 +40,6 @@ export type ElderlyPerson = {
   emergencyPhone?: string
   residenceStartDate?: string
   residenceEndDate?: string
-  originalProvince?: string
-  originalCity?: string
-  targetProvince?: string
-  targetCity?: string
   healthStatus?: "完全自理" | "半自理"
   healthNote?: string
   hobbies?: string
