@@ -7,6 +7,7 @@ import { ElderlyTable } from "@/components/elderly-table"
 import { ElderlyEditSheet } from "@/components/elderly-edit-sheet"
 import { MessagePage } from "@/components/message-page"
 import { useAppToast } from "@/components/app-toast"
+import { AccountProvider } from '@/components/account-context';
 
 export type MenuItem = {
   id: string
@@ -16,6 +17,7 @@ export type MenuItem = {
 
 export type ElderlyPerson = {
   id: string
+  ownerId: string
   user_id: string
   idCard: string
   name: string
@@ -112,23 +114,25 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onMessageClick={handleMessageClick} />
-        <main className="flex-1 overflow-auto p-6">
-          <div className="bg-card rounded-lg shadow-sm h-full">
-            {renderContent()}
-          </div>
-        </main>
+    <AccountProvider>
+      <div className="flex h-screen bg-background">
+        <Sidebar activeMenu={activeMenu} onMenuChange={setActiveMenu} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onMessageClick={handleMessageClick} />
+          <main className="flex-1 overflow-auto p-6">
+            <div className="bg-card rounded-lg shadow-sm h-full">
+              {renderContent()}
+            </div>
+          </main>
+        </div>
+        <ElderlyEditSheet
+          open={!!editingPerson || isAddingNew}
+          onClose={handleCloseSheet}
+          person={editingPerson}
+          isNew={isAddingNew}
+          onSave={handleSave}
+        />
       </div>
-      <ElderlyEditSheet
-        open={!!editingPerson || isAddingNew}
-        onClose={handleCloseSheet}
-        person={editingPerson}
-        isNew={isAddingNew}
-        onSave={handleSave}
-      />
-    </div>
+    </AccountProvider>
   )
 }

@@ -1,11 +1,13 @@
 "use client"
 
+import { useAccount, MOCK_ACCOUNTS } from './account-context';
 import { useState } from "react"
-import { Bell, MapPin, User, LogOut } from "lucide-react"
+import { Bell, MapPin, User, LogOut, Plus, Check, ArrowRightLeft } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -15,7 +17,7 @@ type HeaderProps = {
 
 export function Header({ onMessageClick }: HeaderProps) {
   const [unreadCount] = useState(15)
-
+  const { currentAccount, setCurrentAccount } = useAccount();
   return (
     <header className="h-14 bg-card border-b border-border pl-6 pr-14 flex items-center justify-end gap-6">
       {/* Location */}
@@ -29,13 +31,51 @@ export function Header({ onMessageClick }: HeaderProps) {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <User className="w-4 h-4" />
-            <span>HuangHuaGang_User 01</span>
+            <span>{currentAccount?.name || "HuangHuaGang_User 01"}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem className="cursor-pointer">
-            <LogOut className="w-4 h-4 mr-2" />
-            退出登录
+          {/* 账号列表区 */}
+          {MOCK_ACCOUNTS.map((acc) =>
+            acc.id === currentAccount.id ? (
+              <DropdownMenuItem
+                key={acc.id}
+                className="flex items-center justify-start font-medium text-primary bg-orange-50"
+              >
+                <Check className="w-4 h-4 mr-2 text-green-500" />
+                <span>{acc.name}</span>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                key={acc.id}
+                className="flex items-center justify-start"
+                onClick={() => setCurrentAccount(acc)}
+              >
+                {/* 删除切换icon，仅左对齐账号 */}
+                <span className="ml-6">{acc.name}</span>
+              </DropdownMenuItem>
+            )
+          )}
+
+          {/* 分割线 */}
+          <DropdownMenuSeparator className="h-px bg-border" style={{ height: "1px" }} />
+
+          {/* 添加账号按钮 */}
+          <DropdownMenuItem
+            className="flex items-center justify-start"
+            disabled={MOCK_ACCOUNTS.length >= 3}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            <span>添加账号</span>
+          </DropdownMenuItem>
+
+          {/* 再加一条分割线 */}
+          <DropdownMenuSeparator className="h-px bg-border" style={{ height: "1px" }} />
+
+          {/* 退出登录按钮 */}
+          <DropdownMenuItem className="flex items-center justify-start cursor-pointer">
+            <LogOut className="w-4 h-4 mr-2 " />
+            <span>退出登录</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

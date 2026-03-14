@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useAccount } from "@/components/account-context";
+import { useCallback, useMemo, useRef, useState,useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -40,9 +41,15 @@ import { cn } from "@/lib/utils"
 import { useAppToast } from "@/components/app-toast"
 
 // Mock data for elderly people
+export const MOCK_ACCOUNTS = [
+  { id: 'account_01', name: '黄花岗_User 01' },
+  { id: 'account_02', name: '桥东_User 02' }
+];
+
 const mockData: ElderlyPerson[] = [
   {
     id: "1",
+    ownerId: "account_01",
     user_id: "U202400001",
     idCard: "130102195203154317",
     name: "张建国",
@@ -73,6 +80,7 @@ const mockData: ElderlyPerson[] = [
   },
   {
     id: "2",
+    ownerId: "account_01",
     user_id: "U202400002",
     idCard: "130702196008224528",
     name: "李秀英",
@@ -91,6 +99,69 @@ const mockData: ElderlyPerson[] = [
     medicalInsuranceStatus: "未备案",
     volunteerLevel: "候鸟老年志愿者",
   },
+  // account_02 mock data
+  {
+    id: "3",
+    ownerId: "account_02",
+    user_id: "U202400003",
+    idCard: "210403195705268859",
+    name: "王保国",
+    age: 68,
+    gender: "男",
+    hometown: "辽宁-沈阳",
+    originalProvince: "辽宁省",
+    originalCity: "沈阳市",
+    originalCommunity: "和平北道社区",
+    phone: "13711113233",
+    status: "已返乡",
+    targetProvince: "广东省",
+    targetCity: "广州市",
+    targetCommunity: "桥东三里桥社区",
+    targetAddress: "和平北道街道23号楼1单元204室",
+    medicalInsuranceStatus: "已备案",
+    volunteerLevel: "候鸟老年志愿者",
+    spouseLiving: "否",
+    spouseName: "",
+    emergencyContact: "王雪",
+    emergencyRelation: "子女",
+    emergencyPhone: "13993330000",
+    residenceStartDate: "2023-12-01",
+    residenceEndDate: "2024-04-01",
+    healthStatus: "半自理",
+    healthNote: "需要定期服药，喜欢倒走锻炼",
+    hobbies: "钓鱼，唱歌",
+  },
+  {
+    id: "4",
+    ownerId: "account_02",
+    user_id: "U202400004",
+    idCard: "320924195910167829",
+    name: "杨丽华",
+    age: 64,
+    gender: "女",
+    hometown: "江苏-盐城",
+    originalProvince: "江苏省",
+    originalCity: "盐城市",
+    originalCommunity: "西南水乡社区",
+    phone: "15976543210",
+    status: "待抵达",
+    targetProvince: "广东省",
+    targetCity: "广州市",
+    targetCommunity: "桥东明珠社区",
+    targetAddress: "西南水乡5号楼204室",
+    medicalInsuranceStatus: "未备案",
+    volunteerLevel: "候鸟老年人才",
+    spouseLiving: "是",
+    spouseName: "张永明",
+    emergencyContact: "杨勇",
+    emergencyRelation: "子女",
+    emergencyPhone: "15899998888",
+    residenceStartDate: "2024-10-15",
+    residenceEndDate: "2025-02-28",
+    healthStatus: "完全自理",
+    healthNote: "身体状况良好，无慢性病史",
+    hobbies: "写字，绘画",
+  }
 ]
 
 type ElderlyTableProps = {
@@ -198,7 +269,34 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     return people.slice(start, end)
   }, [people, currentPage, pageSize])
 
-  const handleReset = () => {
+  // 伪 API：基于 searchParams 对 mockData 做精确过滤，后续替换为真实 fetch 即可
+  // 引入 useAccount hooks
+
+  const { currentAccount } = useAccount();
+
+  const handleSearch = useCallback(() => {
+    const filtered = mockData.filter((item) => {
+      // 账号隔离，最高优先级
+      if (item.ownerId !== currentAccount.id) return false;
+      if (searchParams.user_id && item.user_id !== searchParams.user_id) return false;
+      if (searchParams.name && item.name !== searchParams.name) return false;
+      if (searchParams.phone && item.phone !== searchParams.phone) return false;
+      if (searchParams.status && item.status !== searchParams.status) return false;
+      if (searchParams.hometown && item.originalCommunity !== searchParams.hometown) return false;
+      if (searchParams.targetCommunity && item.targetCommunity !== searchParams.targetCommunity) return false;
+      return true;
+    });
+    setPeople(filtered);
+    setCurrentPage(1);
+  }, [searchParams, currentAccount.id, mockData]);
+
+  // 账号变化时自动触发过滤
+  useEffect(() => {
+    handleSearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAccount.id]);
+
+  const handleReset = useCallback(() => {
     setSearchParams({
       user_id: "",
       name: "",
@@ -206,11 +304,15 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
       status: "",
       hometown: "",
       targetCommunity: "",
-    })
-  }
+    });
+    // 注意 reset 时也应该做一次账号隔离
+    const filtered = mockData.filter(item => item.ownerId === currentAccount.id);
+    setPeople(filtered);
+    setCurrentPage(1);
+  }, [mockData, currentAccount.id]);
 
   const requestDelete = (person: ElderlyPerson) => {
-    setDeleteTarget(person)
+    setDeleteTarget(person);
   }
 
   const handleDelete = async (id: string) => {
@@ -298,7 +400,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
               <Input
                 placeholder=""
                 value={searchParams.user_id}
-                onChange={e => setSearchParams({ ...searchParams, user_id: e.target.value })}
+                onChange={e => setSearchParams(prev => ({ ...prev, user_id: e.target.value }))}
                 className="w-full"
               />
             </div>
@@ -311,7 +413,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
               <Input
                 placeholder=""
                 value={searchParams.name}
-                onChange={e => setSearchParams({ ...searchParams, name: e.target.value })}
+                onChange={e => setSearchParams(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full"
               />
             </div>
@@ -324,12 +426,24 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
               <Input
                 placeholder=""
                 value={searchParams.phone}
-                onChange={e => setSearchParams({ ...searchParams, phone: e.target.value })}
+                onChange={e => setSearchParams(prev => ({ ...prev, phone: e.target.value }))}
                 className="w-full"
               />
               <Button
                 variant="secondary"
-                onClick={handleReset}
+                onClick={() => {
+                  setSearchParams(prev => ({
+                    ...prev,
+                    user_id: "",
+                    name: "",
+                    phone: "",
+                    status: "",
+                    hometown: "",
+                    targetCommunity: ""
+                  }))
+                  // 若有一个resetTable或刷新数据源函数需在此调用
+                  if (typeof handleReset === "function") handleReset()
+                }}
                 className="bg-gray-600 text-white hover:bg-gray-700 gap-2 ml-2"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -345,7 +459,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
             <div className="flex-1">
               <Select
                 value={searchParams.status}
-                onValueChange={value => setSearchParams({ ...searchParams, status: value })}
+                onValueChange={value => setSearchParams(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="" />
@@ -366,7 +480,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
               <Input
                 placeholder=""
                 value={searchParams.hometown}
-                onChange={e => setSearchParams({ ...searchParams, hometown: e.target.value })}
+                onChange={e => setSearchParams(prev => ({ ...prev, hometown: e.target.value }))}
                 className="w-full"
               />
             </div>
@@ -379,15 +493,13 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
               <Input
                 placeholder=""
                 value={searchParams.targetCommunity}
-                onChange={e =>
-                  setSearchParams({
-                    ...searchParams,
-                    targetCommunity: e.target.value,
-                  })
-                }
+                onChange={e => setSearchParams(prev => ({ ...prev, targetCommunity: e.target.value }))}
                 className="w-full"
               />
-              <Button className="bg-gray-600 text-white hover:bg-gray-700 gap-2 ml-2">
+              <Button
+                onClick={handleSearch}
+                className="bg-gray-600 text-white hover:bg-gray-700 gap-2 ml-2"
+              >
                 <Search className="w-4 h-4" />
                 查 询
               </Button>
