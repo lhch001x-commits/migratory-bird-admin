@@ -24,50 +24,57 @@ function VersionModal({ open, onClose }: { open: boolean, onClose: () => void })
         className="bg-white rounded-xl shadow-2xl p-0 w-[340px] sm:w-[380px] max-w-[90vw]"
         onClick={(e) => e.stopPropagation()}
       >
+
         {/* Header */}
-        <div className="flex justify-between items-start px-5 pt-5 pb-1">
-          <div>
-            <div className="text-lg font-bold text-gray-900 mb-1 ml-1">版本说明</div>
-            <div className="mt-1">
-              <span className="inline-block px-2 py-0.5 bg-blue-50 text-xs text-blue-500 rounded font-medium">Version-1.0</span>
+          <div className="flex justify-between items-start px-5 pt-5 pb-1">
+            <div>
+              <div className="text-lg font-bold text-gray-900 mb-1 ml-1">版本说明</div>
+              <div className="mt-1">
+                {/* 修改1：头部标签，使用更明亮的浅橙背景和深橙文字 */}
+                <span className="inline-block px-2 py-0.5 bg-orange-100 text-xs text-orange-600 rounded font-medium">
+                  Version-1.0
+                </span>
+              </div>
+            </div>
+            
+            {/* 右上角氛围图 */}
+            <div className="flex-shrink-0 pt-1 pr-1">
+              <svg width="54" height="54" viewBox="0 0 54 54" fill="none">
+                <defs>
+                  {/* 修改2：火箭渐变色统一改为项目主色（Tailwind orange-500 到 orange-300） */}
+                  <linearGradient id="version-rocket" x1="0" y1="0" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#F97316"/> {/* orange-500 */}
+                    <stop offset="1" stopColor="#FDBA74"/> {/* orange-300 */}
+                  </linearGradient>
+                </defs>
+                <ellipse cx="38" cy="46" rx="8" ry="3.5" fill="#FED7AA" fillOpacity="0.5" /> {/* orange-200 */}
+                <g>
+                  <path d="M25.5 47C29.6421 40.8355 41.1257 24.6688 44.0126 14.2385C44.9284 11.1476 43.2173 8.17206 40.2187 7.19148C37.9855 6.48564 35.5749 7.1515 34.0401 8.91987C27.6965 16.3537 15.8837 30.784 13 39.8286C11.9618 42.9595 14.0752 46.1351 17.4314 46.6282C20.4688 47.0736 23.0142 47.4368 25.5 47Z" fill="url(#version-rocket)" />
+                  <circle cx="37" cy="13" r="2.5" fill="#fff" stroke="#F97316" strokeWidth="1.2"/>
+                </g>
+              </svg>
             </div>
           </div>
-          {/* 右上角氛围图（SVG火箭/rocket图标) */}
-          <div className="flex-shrink-0 pt-1 pr-1">
-            {/* 可换为你项目自己的图片 */}
-            <svg width="54" height="54" viewBox="0 0 54 54" fill="none">
-              <defs>
-                <linearGradient id="version-rocket" x1="0" y1="0" x2="0" y2="54" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#3399FF"/>
-                  <stop offset="1" stopColor="#80D0FF"/>
-                </linearGradient>
-              </defs>
-              <ellipse cx="38" cy="46" rx="8" ry="3.5" fill="#85b8f7" fillOpacity="0.32" />
-              <g>
-                <path d="M25.5 47C29.6421 40.8355 41.1257 24.6688 44.0126 14.2385C44.9284 11.1476 43.2173 8.17206 40.2187 7.19148C37.9855 6.48564 35.5749 7.1515 34.0401 8.91987C27.6965 16.3537 15.8837 30.784 13 39.8286C11.9618 42.9595 14.0752 46.1351 17.4314 46.6282C20.4688 47.0736 23.0142 47.4368 25.5 47Z" fill="url(#version-rocket)" />
-                <circle cx="37" cy="13" r="2.5" fill="#fff" stroke="#A2D6FF" strokeWidth="1.2"/>
-              </g>
-            </svg>
+
+          {/* Main Content: 功能介绍区域 */}
+          <div className="px-5 pb-4 pt-1 text-gray-700 text-sm leading-relaxed">
+            <ol className="pl-4 space-y-1 list-decimal">
+              <li>当前版本仅支持信息管理板块的功能</li>
+              <li>后续版本将支持更多功能，敬请期待。</li>
+            </ol>
           </div>
-        </div>
-        {/* Main Content: 功能介绍区域，后续你可直接改写此处内容 */}
-        <div className="px-5 pb-4 pt-1 text-gray-700 text-sm leading-relaxed">
-          <ol className="pl-4 space-y-1 list-decimal">
-            <li>我们改进了面试相关的一些交互，希望你每次面试都有好的体验。</li>
-            <li>我们优化了与简历相关的部分功能，你的履历，定会闪闪发光。</li>
-            {/* 你可以在这里继续完善新版本内容 */}
-          </ol>
-        </div>
-        {/* Footer: 底部按钮 */}
-        <div className="flex px-5 pb-5 pt-2">
-          <button
-            className="flex-1 py-2 rounded font-semibold text-gray-500 hover:bg-gray-100 transition mr-2 bg-gray-100"
-            onClick={onClose}
-            style={{ border: "none" }}
-          >
-            我已知晓
-          </button>
-        </div>
+
+          {/* Footer: 底部按钮 */}
+          <div className="flex px-5 pb-5 pt-2">
+            {/* 修改3：底部按钮改为实心橙色，Hover时颜色加深 */}
+            <button
+              className="flex-1 py-2 rounded font-semibold text-white bg-orange-500 "
+              onClick={onClose}
+              style={{ border: "none" }}
+            >
+              我已知晓
+            </button>
+          </div>
       </div>
     </div>
   );
