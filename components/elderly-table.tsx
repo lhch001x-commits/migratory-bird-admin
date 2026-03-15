@@ -1,7 +1,8 @@
 "use client"
-
+import { ElderlyEditSheet } from './elderly-edit-sheet';
+import { supabase } from "@/lib/supabase"
 import { useAccount } from "@/components/account-context";
-import { useCallback, useMemo, useRef, useState,useEffect } from "react"
+import { useCallback, useMemo, useRef, useState, useEffect } from "react"
 import {
   Table,
   TableBody,
@@ -35,146 +36,28 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Search, Plus, Upload, Download, FileSpreadsheet, X, RotateCcw , List} from "lucide-react"
+import { Search, Plus, Upload, Download, FileSpreadsheet, X, RotateCcw, List } from "lucide-react"
 import type { ElderlyPerson } from "@/app/page"
 import { cn } from "@/lib/utils"
 import { useAppToast } from "@/components/app-toast"
-
-// Mock data for elderly people
-export const MOCK_ACCOUNTS = [
-  { id: 'account_01', name: '黄花岗_User 01' },
-  { id: 'account_02', name: '桥东_User 02' }
-];
-
-const mockData: ElderlyPerson[] = [
-  {
-    id: "1",
-    ownerId: "account_01",
-    user_id: "U202400001",
-    idCard: "130102195203154317",
-    name: "张建国",
-    age: 72,
-    gender: "男",
-    hometown: "河北-石家庄",
-    originalProvince: "河北省",
-    originalCity: "石家庄市",
-    originalCommunity: "桥东三里桥社区",
-    phone: "13323321031",
-    status: "待抵达",
-    targetProvince: "广东省",
-    targetCity: "广州市",
-    targetCommunity: "黄花岗社区",
-    targetAddress: "越秀区黄花岗街道黄花岗社区15号楼3单元402室",
-    medicalInsuranceStatus: "已备案",
-    volunteerLevel: "候鸟老年人才",
-    spouseLiving: "是",
-    spouseName: "王润玉",
-    emergencyContact: "张悦",
-    emergencyRelation: "子女",
-    emergencyPhone: "13213321211",
-    residenceStartDate: "2024-11-21",
-    residenceEndDate: "2025-03-01",
-    healthStatus: "完全自理",
-    healthNote: "患有高血压慢性病，对抗生素药物存在过敏现象",
-    hobbies: "下象棋，打太极拳",
-  },
-  {
-    id: "2",
-    ownerId: "account_01",
-    user_id: "U202400002",
-    idCard: "130702196008224528",
-    name: "李秀英",
-    age: 65,
-    gender: "女",
-    hometown: "河北-张家口",
-    originalProvince: "河北省",
-    originalCity: "张家口市",
-    originalCommunity: "桥西明德社区",
-    phone: "13912345678",
-    status: "居住中",
-    targetProvince: "广东省",
-    targetCity: "广州市",
-    targetCommunity: "黄花岗社区",
-    targetAddress: "越秀区黄花岗街道黄花岗社区8号楼2单元301室",
-    medicalInsuranceStatus: "未备案",
-    volunteerLevel: "候鸟老年志愿者",
-  },
-  // account_02 mock data
-  {
-    id: "3",
-    ownerId: "account_02",
-    user_id: "U202400003",
-    idCard: "210403195705268859",
-    name: "王保国",
-    age: 68,
-    gender: "男",
-    hometown: "辽宁-沈阳",
-    originalProvince: "辽宁省",
-    originalCity: "沈阳市",
-    originalCommunity: "和平北道社区",
-    phone: "13711113233",
-    status: "已返乡",
-    targetProvince: "广东省",
-    targetCity: "广州市",
-    targetCommunity: "桥东三里桥社区",
-    targetAddress: "和平北道街道23号楼1单元204室",
-    medicalInsuranceStatus: "已备案",
-    volunteerLevel: "候鸟老年志愿者",
-    spouseLiving: "否",
-    spouseName: "",
-    emergencyContact: "王雪",
-    emergencyRelation: "子女",
-    emergencyPhone: "13993330000",
-    residenceStartDate: "2023-12-01",
-    residenceEndDate: "2024-04-01",
-    healthStatus: "半自理",
-    healthNote: "需要定期服药，喜欢倒走锻炼",
-    hobbies: "钓鱼，唱歌",
-  },
-  {
-    id: "4",
-    ownerId: "account_02",
-    user_id: "U202400004",
-    idCard: "320924195910167829",
-    name: "杨丽华",
-    age: 64,
-    gender: "女",
-    hometown: "江苏-盐城",
-    originalProvince: "江苏省",
-    originalCity: "盐城市",
-    originalCommunity: "西南水乡社区",
-    phone: "15976543210",
-    status: "待抵达",
-    targetProvince: "广东省",
-    targetCity: "广州市",
-    targetCommunity: "桥东明珠社区",
-    targetAddress: "西南水乡5号楼204室",
-    medicalInsuranceStatus: "未备案",
-    volunteerLevel: "候鸟老年人才",
-    spouseLiving: "是",
-    spouseName: "张永明",
-    emergencyContact: "杨勇",
-    emergencyRelation: "子女",
-    emergencyPhone: "15899998888",
-    residenceStartDate: "2024-10-15",
-    residenceEndDate: "2025-02-28",
-    healthStatus: "完全自理",
-    healthNote: "身体状况良好，无慢性病史",
-    hobbies: "写字，绘画",
-  }
-]
 
 type ElderlyTableProps = {
   title: string
   onEdit: (person: ElderlyPerson) => void
   onAddNew: () => void
+  mode: 'in' | 'out'
 }
 
-export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
+export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProps) {
   // ----- 分页配置与状态 -----
   const pageSize = 10
   const [currentPage, setCurrentPage] = useState(1)
-  const [people, setPeople] = useState<ElderlyPerson[]>(mockData)
+
+  // sourceData 为从云端拉取并经过翻译官转换的全量云端数据
+  const [sourceData, setSourceData] = useState<ElderlyPerson[]>([])
+  // people 控制表格展示
+  const [people, setPeople] = useState<ElderlyPerson[]>([])
+
   const [deleteTarget, setDeleteTarget] = useState<ElderlyPerson | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
@@ -196,6 +79,84 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     "application/vnd.ms-excel",
   ]
   const ACCEPTED_EXCEL_EXTENSIONS = ".xlsx,.xls"
+
+  // 获取当前账号
+  const { currentAccount } = useAccount();
+
+  // ======== 重构: Supabase 拉取&映射逻辑 ================
+  console.log("📢 表格当前收到的 mode 是:", mode, " | 当前账号是:", currentAccount?.id);
+  const fetchElderlyData = useCallback(async () => {
+    // 前置拦截：无账号直接清空
+    if (!currentAccount || !currentAccount.id) {
+      setSourceData([]);
+      setPeople([]);
+      return;
+    }
+
+    // 动态构造 query
+    let query = supabase.from('elderly_info').select('*');
+    if (mode === 'out') {
+      query = query.eq('out_account_id', currentAccount.id);
+    } else if (mode === 'in') {
+      query = query.eq('in_account_id', currentAccount.id);
+    }
+
+    // 添加倒序排序
+    const { data, error } = await query.order('created_at', { ascending: false });
+    console.log("Supabase 返回的原始数据:", data);
+    if (error) {
+      showToast({ description: "拉取候鸟老人数据失败：" + error.message, duration: 3000 });
+      setSourceData([]);
+      setPeople([]);
+      return;
+    }
+
+    if (Array.isArray(data)) {
+      const translated: ElderlyPerson[] = data.map((item: any) => ({
+        id: String(item.id),
+        ownerId: item.owner_id,
+        user_id: item.user_id,
+        userId: typeof item.id === "string" ? item.id.substring(0, 8) : String(item.id),
+        idCard: item.id_card,
+        name: item.name,
+        age: item.age,
+        gender: item.gender,
+        hometown: item.hometown,
+        originalProvince: item.original_province,
+        originalCity: item.original_city,
+        originalCommunity: item.original_community,
+        phone: item.phone,
+        status: item.status,
+        targetProvince: item.target_province,
+        targetCity: item.target_city,
+        targetCommunity: item.target_community,
+        targetAddress: item.target_address,
+        medicalInsuranceStatus: item.medical_insurance_status,
+        volunteerLevel: item.volunteer_level,
+        spouseLiving: item.spouse_living,
+        spouseName: item.spouse_name,
+        emergencyContact: item.emergency_contact,
+        emergencyRelation: item.emergency_contact_relation,
+        emergencyPhone: item.emergency_phone,
+        residenceStartDate: item.residence_start_date,
+        residenceEndDate: item.residence_end_date,
+        healthStatus: item.health_status,
+        healthNote: item.health_details || "",
+        hobbies: item.talents || "",
+      }));
+      setSourceData(translated);
+      setPeople(translated);
+    } else {
+      setSourceData([]);
+      setPeople([]);
+    }
+  }, [currentAccount?.id, mode, showToast]);
+
+  // useEffect 依赖中加入 fetchElderlyData 保证最新
+  useEffect(() => {
+    fetchElderlyData();
+  }, [fetchElderlyData]);
+  // ===============================================
 
   const handleDownloadTemplate = useCallback(() => {
     const templateUrl = "/template/elder_infor_upload_template.xlsx"
@@ -240,12 +201,14 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
       setImportDialogOpen(false)
       setImportFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ""
+      // 上传后自动刷新
+      fetchElderlyData()
     } catch {
       showToast({ description: "导入失败，请重试", duration: 3000 })
     } finally {
       setIsUploading(false)
     }
-  }, [importFile, showToast])
+  }, [importFile, showToast, fetchElderlyData])
 
   const handleRemoveFile = useCallback(() => {
     setImportFile(null)
@@ -257,7 +220,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
   const totalCount = people.length
   const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
 
-  // 如果当前页大于totalPages，则自动校正
+  // 当前页校正
   if (currentPage > totalPages && totalPages > 0) {
     setTimeout(() => setCurrentPage(totalPages), 0)
   }
@@ -269,16 +232,11 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     return people.slice(start, end)
   }, [people, currentPage, pageSize])
 
-  // 伪 API：基于 searchParams 对 mockData 做精确过滤，后续替换为真实 fetch 即可
-  // 引入 useAccount hooks
-
-  const { currentAccount } = useAccount();
-
+  // 搜索时用 sourceData 过滤 (而不是 mockData)
   const handleSearch = useCallback(() => {
-    const filtered = mockData.filter((item) => {
-      // 账号隔离，最高优先级
-      if (item.ownerId !== currentAccount.id) return false;
-      if (searchParams.user_id && item.user_id !== searchParams.user_id) return false;
+    const filtered = sourceData.filter((item) => {
+      // 账号隔离不需要，此时 sourceData 已为当前账号
+      if (searchParams.user_id && item.userId !== searchParams.user_id) return false;
       if (searchParams.name && item.name !== searchParams.name) return false;
       if (searchParams.phone && item.phone !== searchParams.phone) return false;
       if (searchParams.status && item.status !== searchParams.status) return false;
@@ -288,13 +246,13 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
     });
     setPeople(filtered);
     setCurrentPage(1);
-  }, [searchParams, currentAccount.id, mockData]);
+  }, [searchParams, sourceData]);
 
-  // 账号变化时自动触发过滤
+  // sourceData变化时，表格内容回置
   useEffect(() => {
-    handleSearch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAccount.id]);
+    setPeople(sourceData)
+    setCurrentPage(1)
+  }, [sourceData])
 
   const handleReset = useCallback(() => {
     setSearchParams({
@@ -305,21 +263,30 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
       hometown: "",
       targetCommunity: "",
     });
-    // 注意 reset 时也应该做一次账号隔离
-    const filtered = mockData.filter(item => item.ownerId === currentAccount.id);
-    setPeople(filtered);
+    setPeople(sourceData);
     setCurrentPage(1);
-  }, [mockData, currentAccount.id]);
+  }, [sourceData]);
 
   const requestDelete = (person: ElderlyPerson) => {
     setDeleteTarget(person);
   }
 
-  const handleDelete = async (id: string) => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000))
-    setPeople((prev) => prev.filter((p) => p.id !== id))
-    showToast({ description: "删除成功", duration: 3000 })
-  }
+  // 新的弹窗内删除逻辑（根据指令重写）
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget || !deleteTarget.id) return;
+    setIsDeleting(true);
+    const { error } = await supabase.from('elderly_info').delete().eq('id', deleteTarget.id);
+    if (error) {
+      showToast({ description: "删除失败：" + error.message, duration: 3000 });
+      setIsDeleting(false);
+      return;
+    }
+    showToast({ description: "删除成功", duration: 3000 });
+    setDeleteTarget(null); // 关闭二次确认弹窗
+    setIsDeleting(false);
+    // 刷新表格列表数据
+    fetchElderlyData();
+  }, [deleteTarget, showToast, fetchElderlyData]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -388,7 +355,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
       </div>
 
       {/* Search Section */}
-      <div className="bg-muted/30 rounded-lg p-4 mb-4">
+      <div className="bg-muted/50 rounded-lg p-4 mb-4">
         <h3 className="text-base font-medium mb-4 text-foreground/70">候鸟老人信息查询</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
           {/* 第一行：用户ID、姓名、手机号、重置按钮 */}
@@ -441,7 +408,6 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
                     hometown: "",
                     targetCommunity: ""
                   }))
-                  // 若有一个resetTable或刷新数据源函数需在此调用
                   if (typeof handleReset === "function") handleReset()
                 }}
                 className="bg-gray-600 text-white hover:bg-gray-700 gap-2 ml-2"
@@ -579,7 +545,8 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
                 paginatedData.map((person) => (
                   <TableRow key={person.id}>
                     <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
-                      {person.user_id}
+                      {/* 修复：此处应使用 person.userId 而非 person.user_id */}
+                      {person.userId}
                     </TableCell>
                     <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
@@ -630,9 +597,19 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
                     </TableCell>
                     <TableCell className="text-center whitespace-nowrap sticky right-0 bg-background z-10 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.1)]">
                       <div className="flex items-center justify-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => onEdit(person)}>
-                          查看/编辑
-                        </Button>
+                      <ElderlyEditSheet
+                        initialData={person}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            查看/编辑
+                          </Button>
+                        }
+                        // 👇 下面这 4 个就是补齐的缺失参数
+                        isNew={false}              // 明确告诉组件：这是编辑老数据，不是新增
+                        open={false}           // 因为我们用了 trigger 按钮，开合状态交给组件内部处理即可
+                        onClose={() => {}}         // 塞一个空函数占位，防止 TypeScript 报错
+                        onSave={fetchElderlyData}  // 极其关键：保存成功后，重新调用拉取云端数据的函数，刷新表格！
+                      />
                         <Button variant="destructive" size="sm" onClick={() => requestDelete(person)}>
                           删除
                         </Button>
@@ -655,7 +632,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
       {/* Pagination - 新实现 */}
       <div className="flex items-center justify-between mt-4 pt-4 border-t">
         <span className="text-sm text-muted-foreground">
-          共 {totalCount} 条数据
+          共 {people.length} 条数据
         </span>
         <div className="flex items-center gap-2">
           {/* 页码数字与切换 */}
@@ -742,16 +719,7 @@ export function ElderlyTable({ title, onEdit, onAddNew }: ElderlyTableProps) {
             <Button
               type="button"
               className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={async () => {
-                if (!deleteTarget) return
-                try {
-                  setIsDeleting(true)
-                  await handleDelete(deleteTarget.id)
-                  setDeleteTarget(null)
-                } finally {
-                  setIsDeleting(false)
-                }
-              }}
+              onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
               {isDeleting ? "删除中..." : "确认删除"}

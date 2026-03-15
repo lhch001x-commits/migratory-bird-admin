@@ -9,6 +9,70 @@ import { MessagePage } from "@/components/message-page"
 import { useAppToast } from "@/components/app-toast"
 import { AccountProvider } from '@/components/account-context';
 
+// 🚀 版本弹窗组件
+function VersionModal({ open, onClose }: { open: boolean, onClose: () => void }) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      onClick={onClose}
+      role="button"
+      tabIndex={0}
+      aria-label="点击关闭"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl p-0 w-[340px] sm:w-[380px] max-w-[90vw]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start px-5 pt-5 pb-1">
+          <div>
+            <div className="text-lg font-bold text-gray-900 mb-1 ml-1">版本说明</div>
+            <div className="mt-1">
+              <span className="inline-block px-2 py-0.5 bg-blue-50 text-xs text-blue-500 rounded font-medium">VERSION-1.0</span>
+            </div>
+          </div>
+          {/* 右上角氛围图（SVG火箭/rocket图标) */}
+          <div className="flex-shrink-0 pt-1 pr-1">
+            {/* 可换为你项目自己的图片 */}
+            <svg width="54" height="54" viewBox="0 0 54 54" fill="none">
+              <defs>
+                <linearGradient id="version-rocket" x1="0" y1="0" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#3399FF"/>
+                  <stop offset="1" stopColor="#80D0FF"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="38" cy="46" rx="8" ry="3.5" fill="#85b8f7" fillOpacity="0.32" />
+              <g>
+                <path d="M25.5 47C29.6421 40.8355 41.1257 24.6688 44.0126 14.2385C44.9284 11.1476 43.2173 8.17206 40.2187 7.19148C37.9855 6.48564 35.5749 7.1515 34.0401 8.91987C27.6965 16.3537 15.8837 30.784 13 39.8286C11.9618 42.9595 14.0752 46.1351 17.4314 46.6282C20.4688 47.0736 23.0142 47.4368 25.5 47Z" fill="url(#version-rocket)" />
+                <circle cx="37" cy="13" r="2.5" fill="#fff" stroke="#A2D6FF" strokeWidth="1.2"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+        {/* Main Content: 功能介绍区域，后续你可直接改写此处内容 */}
+        <div className="px-5 pb-4 pt-1 text-gray-700 text-sm leading-relaxed">
+          <ol className="pl-4 space-y-1 list-decimal">
+            <li>我们改进了面试相关的一些交互，希望你每次面试都有好的体验。</li>
+            <li>我们优化了与简历相关的部分功能，你的履历，定会闪闪发光。</li>
+            {/* 你可以在这里继续完善新版本内容 */}
+          </ol>
+        </div>
+        {/* Footer: 底部按钮 */}
+        <div className="flex px-5 pb-5 pt-2">
+          <button
+            className="flex-1 py-2 rounded font-semibold text-gray-500 hover:bg-gray-100 transition mr-2 bg-gray-100"
+            onClick={onClose}
+            style={{ border: "none" }}
+          >
+            我已知晓
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export type MenuItem = {
   id: string
   label: string
@@ -18,7 +82,8 @@ export type MenuItem = {
 export type ElderlyPerson = {
   id: string
   ownerId: string
-  user_id: string
+  // user_id: string
+  userId?: string;
   idCard: string
   name: string
   age: number
@@ -48,19 +113,25 @@ export type ElderlyPerson = {
 }
 
 export default function Home() {
-  const [activeMenu, setActiveMenu] = useState("migrate-in")
+  const [activeMenu, setActiveMenu] = useState("migrate-out")
   const [editingPerson, setEditingPerson] = useState<ElderlyPerson | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
+  const [showVersionModal, setShowVersionModal] = useState(false)
   const { showToast } = useAppToast()
 
+  // 页面加载后（客户端挂载完成）再显示版本弹窗，确保一刷新就能看到
   useEffect(() => {
-    showToast({
-      title: "提示",
-      description: "服务端数据维护中，请先预览前端交互",
-      duration: 3000,
-    })
-  }, [showToast])
+    setShowVersionModal(true)
+  }, [])
+
+  // useEffect(() => {
+  //   showToast({
+  //     title: "提示",
+  //     description: "MVP1.0 仅支持信息管理功能",
+  //     duration: 3000,
+  //   })
+  // }, [showToast])
 
   const handleEdit = (person: ElderlyPerson) => {
     setEditingPerson(person)
@@ -90,6 +161,9 @@ export default function Home() {
     setShowMessages(false)
   }
 
+  // 由activeMenu推导tableMode
+  const tableMode = activeMenu === 'migrate-in' ? 'in' : 'out'
+
   const renderContent = () => {
     if (showMessages) {
       return <MessagePage onBack={handleBackFromMessages} />
@@ -102,6 +176,7 @@ export default function Home() {
           title={title}
           onEdit={handleEdit}
           onAddNew={handleAddNew}
+          mode={tableMode}
         />
       )
     }
@@ -131,6 +206,10 @@ export default function Home() {
           person={editingPerson}
           isNew={isAddingNew}
           onSave={handleSave}
+        />
+        <VersionModal
+          open={showVersionModal}
+          onClose={() => setShowVersionModal(false)}
         />
       </div>
     </AccountProvider>

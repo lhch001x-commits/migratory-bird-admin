@@ -29,8 +29,8 @@ const menuItems: MenuItem[] = [
     label: "信息管理",
     icon: <ClipboardList className="w-5 h-5" />,
     children: [
-      { id: "migrate-in", label: "迁入候鸟老人" },
       { id: "migrate-out", label: "迁出候鸟老人" },
+      { id: "migrate-in", label: "迁入候鸟老人" },
     ],
   },
   {
@@ -74,6 +74,11 @@ export function Sidebar({ activeMenu, onMenuChange }: SidebarProps) {
       return item.children.some((child) => child.id === activeMenu)
     }
     return item.id === activeMenu
+  }
+
+  // 子菜单点击：只调用 onMenuChange 即可
+  const handleChildMenuClick = (childId: string) => {
+    onMenuChange(childId)
   }
 
   return (
@@ -154,7 +159,7 @@ export function Sidebar({ activeMenu, onMenuChange }: SidebarProps) {
                     return (
                       <button
                         key={child.id}
-                        onClick={() => onMenuChange(child.id)}
+                        onClick={() => handleChildMenuClick(child.id)}
                         className={cn(
                           "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
                           isChildActive

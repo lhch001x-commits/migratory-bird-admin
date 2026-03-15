@@ -1,6 +1,6 @@
 "use client"
 
-import { useAccount, MOCK_ACCOUNTS } from './account-context';
+import { useAccount } from './account-context';
 import { useState } from "react"
 import { Bell, MapPin, User, LogOut, Plus, Check, ArrowRightLeft } from "lucide-react"
 import {
@@ -17,13 +17,16 @@ type HeaderProps = {
 
 export function Header({ onMessageClick }: HeaderProps) {
   const [unreadCount] = useState(15)
-  const { currentAccount, setCurrentAccount } = useAccount();
+  const { currentAccount, setCurrentAccount, accounts } = useAccount();
+
   return (
     <header className="h-14 bg-card border-b border-border pl-6 pr-14 flex items-center justify-end gap-6">
       {/* Location */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <MapPin className="w-4 h-4" />
-        <span>广州-黄花岗社区</span>
+        <span>
+          {(currentAccount?.province || "") + (currentAccount?.city || "")}
+        </span>
       </div>
 
       {/* User Menu */}
@@ -36,8 +39,8 @@ export function Header({ onMessageClick }: HeaderProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           {/* 账号列表区 */}
-          {MOCK_ACCOUNTS.map((acc) =>
-            acc.id === currentAccount.id ? (
+          {accounts.map((acc) =>
+            acc.id === currentAccount?.id ? (
               <DropdownMenuItem
                 key={acc.id}
                 className="flex items-center justify-start font-medium text-primary bg-orange-50"
@@ -63,7 +66,7 @@ export function Header({ onMessageClick }: HeaderProps) {
           {/* 添加账号按钮 */}
           <DropdownMenuItem
             className="flex items-center justify-start"
-            disabled={MOCK_ACCOUNTS.length >= 3}
+            disabled={accounts.length >= 3}
           >
             <Plus className="w-4 h-4 mr-2" />
             <span>添加账号</span>

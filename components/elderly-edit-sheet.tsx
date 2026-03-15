@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { X } from "lucide-react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,15 +15,28 @@ import { Label } from "@/components/ui/label"
 import type { ElderlyPerson } from "@/app/page"
 import { cn } from "@/lib/utils"
 import { useAppToast } from "@/components/app-toast"
+import { supabase } from "@/lib/supabase"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+// 获取当前登录用户
+import { useAccount } from "@/components/account-context"
 
 type ElderlyEditSheetProps = {
   open: boolean
   onClose: () => void
-  person: ElderlyPerson | null
+  initialData?: ElderlyPerson
   isNew: boolean
   onSave: (data: Partial<ElderlyPerson>) => void
+  person?: ElderlyPerson | null
+  trigger?: React.ReactNode
 }
 
+// 返回称谓
 const getVolunteerLevelLabel = (level: string | undefined) => {
   if (!level) return ""
   switch (level) {
@@ -39,40 +51,171 @@ const getVolunteerLevelLabel = (level: string | undefined) => {
   }
 }
 
+// 字段反向映射：camelCase -> snake_case
+function mapToDbPayload(formData: Partial<ElderlyPerson>) {
+  return {
+    id_card: formData.idCard,
+    name: formData.name,
+    age: formData.age,
+    gender: formData.gender,
+    phone: formData.phone,
+    spouse_living: formData.spouseLiving,
+    spouse_name: formData.spouseName,
+    emergency_contact: formData.emergencyContact,
+    emergency_contact_relation: formData.emergencyRelation,
+    emergency_phone: formData.emergencyPhone,
+    status: formData.status,
+    residence_start_date: formData.residenceStartDate,
+    residence_end_date: formData.residenceEndDate,
+    original_province: formData.originalProvince,
+    original_city: formData.originalCity,
+    original_community: formData.originalCommunity,
+    target_province: formData.targetProvince,
+    target_city: formData.targetCity,
+    target_community: formData.targetCommunity,
+    target_address: formData.targetAddress,
+    health_status: formData.healthStatus,
+    health_details: formData.healthNote,
+    medical_insurance_status: formData.medicalInsuranceStatus,
+    talents: formData.hobbies,
+    volunteer_level: formData.volunteerLevel,
+    user_id: formData.userId
+    // owner_id 不做类型限制，见 handleSave 处临时补充
+  }
+}
+
 export function ElderlyEditSheet({
   open,
   onClose,
+  initialData,
   person,
   isNew,
   onSave,
+  trigger,
 }: ElderlyEditSheetProps) {
+  // 获取当前登录用户，只取 currentAccount
+  const { currentAccount } = useAccount()
+
   const [formData, setFormData] = useState<Partial<ElderlyPerson>>({})
-  const [error, setError] = useState<{field: string; msg: string} | null>(null)
-  const errorField = error?.field ?? null
+  const [error, setError] = useState<{ field: string; msg: string } | null>(null)
   const { showToast } = useAppToast()
+  const didEffect = useRef(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const [sysLocations, setSysLocations] = useState<any[]>([])
+  console.log("【抽屉收到的包裹 initialData】:", initialData);
+
+  // ========== 获取省市社区动态数据 ==========
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from('sys_communities').select('*')
+      if (!error && Array.isArray(data)) setSysLocations(data)
+    })()
+  }, [])
 
   useEffect(() => {
-    if (person) {
-      setFormData(person)
-    } else {
-      setFormData({
-        emergencyRelation: "子女",
-      })
-    }
-  }, [person, open])
-
-  // 清空错误状态: 弹窗关闭时
-  useEffect(() => {
-    if (!open) setError(null)
+    setInternalOpen(open)
   }, [open])
 
-  const handleSave = () => {
-    const isEmpty = (val: unknown): boolean =>
-      val === undefined || val === null || String(val).trim() === ''
+  // 回显
+  useEffect(() => {
+    if (internalOpen && initialData) {
+      setFormData({
+        ...initialData,
+        originalProvince: initialData.originalProvince ?? "",
+        originalCity: initialData.originalCity ?? "",
+        originalCommunity: initialData.originalCommunity ?? "",
+        targetProvince: initialData.targetProvince ?? "",
+        targetCity: initialData.targetCity ?? "",
+        targetCommunity: initialData.targetCommunity ?? "",
+        healthNote: initialData.healthNote || (initialData as any).health_details || "",
+        hobbies: initialData.hobbies || (initialData as any).talents || "",
+      })
+      didEffect.current = true
+    } else if (internalOpen && !initialData && person) {
+      setFormData({
+        ...person,
+        originalProvince: person.originalProvince ?? "",
+        originalCity: person.originalCity ?? "",
+        originalCommunity: person.originalCommunity ?? "",
+        targetProvince: person.targetProvince ?? "",
+        targetCity: person.targetCity ?? "",
+        targetCommunity: person.targetCommunity ?? "",
+        healthNote: person.healthNote || (person as any).health_details || "",
+        hobbies: person.hobbies || (person as any).talents || "",
+      })
+      didEffect.current = true
+    } else if (internalOpen && !initialData && !person) {
+      setFormData({ emergencyRelation: "子女" })
+      didEffect.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData, person, internalOpen])
 
-    const block = (field: string, msg: string = '此为必填项') => {
+  // 下拉联动
+  const originalProvinces = useMemo(() => {
+    const set = new Set<string>()
+    sysLocations.forEach(item => { if(item.province) set.add(item.province) })
+    return Array.from(set)
+  }, [sysLocations])
+
+  const originalCities = useMemo(() => {
+    if (!formData.originalProvince) return []
+    const set = new Set<string>()
+    sysLocations
+      .filter(item => item.province === formData.originalProvince)
+      .forEach(item => { if(item.city) set.add(item.city) })
+    return Array.from(set)
+  }, [formData.originalProvince, sysLocations])
+
+  const originalCommunities = useMemo(() => {
+    if (!formData.originalProvince || !formData.originalCity) return []
+    const set = new Set<string>()
+    sysLocations
+      .filter(item =>
+        item.province === formData.originalProvince &&
+        item.city === formData.originalCity
+      )
+      .forEach(item => { if(item.community) set.add(item.community) })
+    return Array.from(set)
+  }, [formData.originalProvince, formData.originalCity, sysLocations])
+
+  const targetProvinces = useMemo(() => {
+    const set = new Set<string>()
+    sysLocations.forEach(item => { if(item.province) set.add(item.province) })
+    return Array.from(set)
+  }, [sysLocations])
+
+  const targetCities = useMemo(() => {
+    if (!formData.targetProvince) return []
+    const set = new Set<string>()
+    sysLocations
+      .filter(item => item.province === formData.targetProvince)
+      .forEach(item => { if(item.city) set.add(item.city) })
+    return Array.from(set)
+  }, [formData.targetProvince, sysLocations])
+
+  const targetCommunities = useMemo(() => {
+    if (!formData.targetProvince || !formData.targetCity) return []
+    const set = new Set<string>()
+    sysLocations
+      .filter(item =>
+        item.province === formData.targetProvince &&
+        item.city === formData.targetCity
+      )
+      .forEach(item => { if(item.community) set.add(item.community) })
+    return Array.from(set)
+  }, [formData.targetProvince, formData.targetCity, sysLocations])
+
+  useEffect(() => {
+    if (!internalOpen) setError(null)
+  }, [internalOpen])
+
+  const handleSave = async () => {
+    const isEmpty = (val: unknown): boolean =>
+      val === undefined || val === null || String(val).trim() === ""
+    const block = (field: string, msg: string = "此为必填项") => {
       setError({ field, msg })
-      document.getElementById('field-' + field)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      document.getElementById("field-" + field)?.scrollIntoView({ behavior: "smooth", block: "center" })
       return true
     }
 
@@ -104,34 +247,103 @@ export function ElderlyEditSheet({
     if (isEmpty(formData.medicalInsuranceStatus)) { if (block('medicalInsuranceStatus')) return }
     if (isEmpty(formData.hobbies)) { if (block('hobbies')) return }
 
-    onSave(formData)
+    // === 准备发送至后端的真实数据库字段对象 ===
+    // 用 any，彻底去掉类型限制，允许 owner_id
+    let dbPayload: any = { ...mapToDbPayload(formData) }
+
+    // 删除无关字段，防止 TS 报错，防止冗余
+    if ("emergency_relation" in dbPayload) {
+      delete dbPayload.emergency_relation
+    }
+
+    if (isNew) {
+      // 必须能拿到登录用户ID
+      if (!currentAccount?.id) {
+        showToast({ description: "无法获取当前账号信息，请重新登录", duration: 3000 })
+        return
+      }
+      dbPayload.owner_id = currentAccount.id
+
+      try {
+        const { error: insertError, data: insertData } = await supabase
+          .from("elderly_info")
+          .insert(dbPayload as any)
+          .select()
+        if (insertError) {
+          showToast({ description: "新增失败：" + insertError.message, duration: 3000 })
+          return
+        }
+        showToast({ description: "新增成功", duration: 2000 })
+        if (Array.isArray(insertData) && insertData[0]) {
+          onSave(insertData[0])
+        } else {
+          onSave(formData)
+        }
+        setInternalOpen(false)
+        onClose?.()
+      } catch (err) {
+        showToast({ description: "新增异常", duration: 3000 })
+      }
+      return
+    }
+
+    // 编辑模式，确保不传 owner_id/user_id
+    if ("owner_id" in dbPayload) delete dbPayload.owner_id
+    if ("user_id" in dbPayload) delete dbPayload.user_id
+
+    const updateData = { ...formData }
+    const trueId =
+      (initialData && initialData.id) ||
+      (person && person.id) ||
+      updateData.id
+
+    if (!trueId) {
+      showToast({ description: "无法获取ID，无法保存", duration: 3000 })
+      return
+    }
+
+    // 类型 any，彻底去掉校验限制
+    let dbPayloadForUpdate: any = { ...dbPayload }
+
+    try {
+      const { error: updateError } = await supabase
+        .from("elderly_info")
+        .update(dbPayloadForUpdate)
+        .eq("id", trueId)
+
+      if (updateError) {
+        showToast({ description: "更新失败：" + updateError.message, duration: 3000 })
+        return
+      }
+      showToast({ description: "更新成功", duration: 2000 })
+      onSave({ ...updateData, id: trueId })
+      setInternalOpen(false)
+      onClose?.()
+    } catch (err) {
+      showToast({ description: "更新异常", duration: 3000 })
+    }
   }
 
-  if (!open) return null
-
+  // 绝不做任何提前 return 判断，trigger 必须保证直出
   return (
-    <div className="fixed inset-0 z-50 flex">
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Sheet */}
-      <div className="fixed right-0 top-0 h-full w-[450px] bg-card shadow-xl flex flex-col z-50">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">
+    <Sheet open={internalOpen} onOpenChange={(o) => {
+      setInternalOpen(o)
+      if (!o) onClose?.()
+    }}>
+      <SheetTrigger asChild>
+        {trigger}
+      </SheetTrigger>
+      <SheetContent
+        side="right"
+        className="sm:max-w-[500px] w-[90vw] overflow-y-auto flex flex-col px-0 py-0"
+      >
+        <SheetHeader>
+          <SheetTitle>
             {isNew ? "新增候鸟老人信息" : "候鸟老人信息编辑"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-muted transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          </SheetTitle>
+        </SheetHeader>
 
-        {/* Content */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
-
           {/* 用户编号 */}
           <div className="grid grid-cols-4 items-start gap-4">
             <Label className="text-right mt-2 shrink-0 text-sm font-medium text-muted-foreground">
@@ -139,7 +351,7 @@ export function ElderlyEditSheet({
             </Label>
             <div className="col-span-3 flex flex-col gap-1 w-full relative" id="field-user_id">
               <Input
-                value={formData.user_id || "保存后，由系统自动生成"}
+                value={formData.userId || "保存后，由系统自动生成"}
                 disabled
                 className="w-56"
               />
@@ -205,9 +417,9 @@ export function ElderlyEditSheet({
                   }}
                   className="w-28"
                 />
-                {!isNew && person?.volunteerLevel && (
+                {!isNew && formData.volunteerLevel && (
                   <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    {getVolunteerLevelLabel(person?.volunteerLevel)}
+                    {getVolunteerLevelLabel(formData.volunteerLevel)}
                   </span>
                 )}
               </div>
@@ -376,7 +588,7 @@ export function ElderlyEditSheet({
 
           {/* 紧急联系人 */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right mt-2 shrink-0 text-sm font-medium text-muted-foreground">
+            <Label className="text-left mt-2 shrink-0 text-sm font-medium text-muted-foreground">
               紧急联系人：
             </Label>
             <div className="col-span-3 flex flex-col gap-1 w-full relative" id="field-emergencyContact">
@@ -544,62 +756,91 @@ export function ElderlyEditSheet({
 
           {/* 原住地-社区 */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right mt-2 shrink-0 text-sm font-medium text-muted-foreground">
+            <Label className="text-left mt-2 shrink-0 text-sm font-medium text-muted-foreground">
               原住地-社区：
             </Label>
             <div className="col-span-3 flex flex-col gap-1 w-full relative" id="field-originalProvince">
-              {/* 隐式锚点，供 originalCity / originalCommunity 的 scrollIntoView 使用 */}
               <span id="field-originalCity" />
               <span id="field-originalCommunity" />
               <div className="flex items-center gap-2">
+                {/* 省份动态 */}
                 <Select
                   value={formData.originalProvince || ""}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setError(null)
-                    setFormData({ ...formData, originalProvince: value })
+                    setFormData({
+                      ...formData,
+                      originalProvince: value,
+                      originalCity: "",
+                      originalCommunity: ""
+                    })
                   }}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="省份" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="河北">河北</SelectItem>
-                    <SelectItem value="北京">北京</SelectItem>
-                    <SelectItem value="天津">天津</SelectItem>
-                    <SelectItem value="山东">山东</SelectItem>
-                    <SelectItem value="吉林">吉林</SelectItem>
+                    {originalProvinces.length === 0 && (
+                      <SelectItem value="" disabled>加载中…</SelectItem>
+                    )}
+                    {originalProvinces.map(p => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {/* 城市动态 */}
                 <Select
                   value={formData.originalCity || ""}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setError(null)
-                    setFormData({ ...formData, originalCity: value })
+                    setFormData({
+                      ...formData,
+                      originalCity: value,
+                      originalCommunity: ""
+                    })
                   }}
+                  disabled={!formData.originalProvince}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="城市" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="石家庄">石家庄</SelectItem>
-                    <SelectItem value="张家口">张家口</SelectItem>
-                    <SelectItem value="承德">承德</SelectItem>
-                    <SelectItem value="长春">长春</SelectItem>
+                    {formData.originalProvince && originalCities.length === 0 && (
+                      <SelectItem value="" disabled>无可选城市</SelectItem>
+                    )}
+                    {originalCities.map(c => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {/* 社区动态 */}
                 <Select
                   value={formData.originalCommunity || ""}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setError(null)
-                    setFormData({ ...formData, originalCommunity: value })
+                    setFormData({
+                      ...formData,
+                      originalCommunity: value
+                    })
                   }}
+                  disabled={!formData.originalProvince || !formData.originalCity}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="社区" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="桥东三里桥社区">桥东三里桥社区</SelectItem>
-                    <SelectItem value="桥西明德社区">桥西明德社区</SelectItem>
+                    {formData.originalProvince && formData.originalCity && originalCommunities.length === 0 && (
+                      <SelectItem value="" disabled>无可选社区</SelectItem>
+                    )}
+                    {originalCommunities.map(c => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -611,60 +852,91 @@ export function ElderlyEditSheet({
 
           {/* 迁入地-社区 */}
           <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right mt-2 shrink-0 text-sm font-medium text-muted-foreground">
+            <Label className="text-left mt-2 shrink-0 text-sm font-medium text-muted-foreground">
               迁入地-社区：
             </Label>
             <div className="col-span-3 flex flex-col gap-1 w-full relative" id="field-targetProvince">
-              {/* 隐式锚点，供 targetCity / targetCommunity 的 scrollIntoView 使用 */}
               <span id="field-targetCity" />
               <span id="field-targetCommunity" />
               <div className="flex items-center gap-2">
+                {/* 省份动态 */}
                 <Select
                   value={formData.targetProvince || ""}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setError(null)
-                    setFormData({ ...formData, targetProvince: value })
+                    setFormData({
+                      ...formData,
+                      targetProvince: value,
+                      targetCity: "",
+                      targetCommunity: ""
+                    })
                   }}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="省份" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="广东">广东</SelectItem>
-                    <SelectItem value="海南">海南</SelectItem>
-                    <SelectItem value="云南">云南</SelectItem>
+                    {targetProvinces.length === 0 && (
+                      <SelectItem value="" disabled>加载中…</SelectItem>
+                    )}
+                    {targetProvinces.map(p => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {/* 城市动态 */}
                 <Select
                   value={formData.targetCity || ""}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setError(null)
-                    setFormData({ ...formData, targetCity: value })
+                    setFormData({
+                      ...formData,
+                      targetCity: value,
+                      targetCommunity: ""
+                    })
                   }}
+                  disabled={!formData.targetProvince}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="城市" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="广州">广州</SelectItem>
-                    <SelectItem value="深圳">深圳</SelectItem>
-                    <SelectItem value="珠海">珠海</SelectItem>
+                    {formData.targetProvince && targetCities.length === 0 && (
+                      <SelectItem value="" disabled>无可选城市</SelectItem>
+                    )}
+                    {targetCities.map(c => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {/* 社区动态 */}
                 <Select
                   value={formData.targetCommunity || ""}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setError(null)
-                    setFormData({ ...formData, targetCommunity: value })
+                    setFormData({
+                      ...formData,
+                      targetCommunity: value
+                    })
                   }}
+                  disabled={!formData.targetProvince || !formData.targetCity}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="社区" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="黄花岗社区">黄花岗社区</SelectItem>
-                    <SelectItem value="白云山社区">白云山社区</SelectItem>
-                    <SelectItem value="香雪社区">香雪社区</SelectItem>
+                    {formData.targetProvince && formData.targetCity && targetCommunities.length === 0 && (
+                      <SelectItem value="" disabled>无可选社区</SelectItem>
+                    )}
+                    {targetCommunities.map(c => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -860,16 +1132,14 @@ export function ElderlyEditSheet({
               </div>
             </div>
           </div>
-
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t">
-          <Button type="button" onClick={(e) => { e.preventDefault(); handleSave(); }} className="w-full">
+          <Button type="button" onClick={e => { e.preventDefault(); handleSave(); }} className="w-full">
             保 存
           </Button>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }
