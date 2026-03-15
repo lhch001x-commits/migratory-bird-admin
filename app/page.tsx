@@ -29,7 +29,7 @@ function VersionModal({ open, onClose }: { open: boolean, onClose: () => void })
           <div>
             <div className="text-lg font-bold text-gray-900 mb-1 ml-1">版本说明</div>
             <div className="mt-1">
-              <span className="inline-block px-2 py-0.5 bg-blue-50 text-xs text-blue-500 rounded font-medium">VERSION-1.0</span>
+              <span className="inline-block px-2 py-0.5 bg-blue-50 text-xs text-blue-500 rounded font-medium">Version-1.0</span>
             </div>
           </div>
           {/* 右上角氛围图（SVG火箭/rocket图标) */}
