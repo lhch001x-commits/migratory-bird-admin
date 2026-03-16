@@ -1,7 +1,6 @@
 "use client"
 
 import { useAccount } from './account-context';
-import { useState } from "react"
 import { Bell, MapPin, User, LogOut, Plus, Check, ArrowRightLeft } from "lucide-react"
 import {
   DropdownMenu,
@@ -16,7 +15,7 @@ type HeaderProps = {
 }
 
 export function Header({ onMessageClick }: HeaderProps) {
-  const [unreadCount] = useState(15)
+  const unreadCount = 0
   const { currentAccount, setCurrentAccount, accounts } = useAccount();
 
   return (
@@ -91,7 +90,7 @@ export function Header({ onMessageClick }: HeaderProps) {
         <Bell className="w-4 h-4" />
         <span>消息</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-[10px] left-10 min-w-[16px] h-[16px] px-1 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+          <span className="absolute -top-[10px] left-10 min-w-[16px] h-[16px] px-1 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

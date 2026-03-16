@@ -40,6 +40,7 @@ import { Search, Plus, Upload, Download, FileSpreadsheet, X, RotateCcw, List } f
 import type { ElderlyPerson } from "@/app/page"
 import { cn } from "@/lib/utils"
 import { useAppToast } from "@/components/app-toast"
+import * as XLSX from "xlsx"
 
 type ElderlyTableProps = {
   title: string
@@ -47,9 +48,10 @@ type ElderlyTableProps = {
   onAddNew: () => void
   mode: 'in' | 'out'
   refreshTrigger?: number
+  onImportSuccess?: () => void
 }
 
-export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: ElderlyTableProps) {
+export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger, onImportSuccess }: ElderlyTableProps) {
   // ----- 分页配置与状态 -----
   const pageSize = 7
   const [currentPage, setCurrentPage] = useState(1)
@@ -65,6 +67,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
   const [importFile, setImportFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const importDialogFileInputRef = useRef<HTMLInputElement>(null)
   const [searchParams, setSearchParams] = useState({
     user_id: "",
     name: "",
@@ -82,7 +85,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
   const ACCEPTED_EXCEL_EXTENSIONS = ".xlsx,.xls"
 
   // 获取当前账号
-  const { currentAccount } = useAccount();
+  const { currentAccount, accounts } = useAccount();
 
   // ======== 重构: Supabase 拉取&映射逻辑 ================
   console.log("📢 表格当前收到的 mode 是:", mode, " | 当前账号是:", currentAccount?.id);
@@ -134,7 +137,12 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
         targetAddress: item.target_address,
         medicalInsuranceStatus: item.medical_insurance_status,
         volunteerLevel: item.volunteer_level,
-        spouseLiving: item.spouse_living,
+        spouseLiving:
+          item.spouse_living === true || item.spouse_living === "true" || item.spouse_living === 1 || item.spouse_living === "1"
+            ? "是"
+            : item.spouse_living === false || item.spouse_living === "false" || item.spouse_living === 0 || item.spouse_living === "0"
+              ? "否"
+              : item.spouse_living,
         spouseName: item.spouse_name,
         emergencyContact: item.emergency_contact,
         emergencyRelation: item.emergency_contact_relation,
@@ -170,6 +178,193 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
     document.body.removeChild(link)
   }, [])
 
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // 监听器 1：看按钮有没有连上
+    console.log("👉 1. 触发了 onChange，拿到的文件是:", file?.name)
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (event) => {
+      // 监听器 2：看浏览器能不能读懂这文件
+      console.log("👉 2. 文件读取成功，准备进入 XLSX 解析")
+      try {
+        const binaryData = event.target?.result
+        if (!binaryData) return
+
+        const workbook = XLSX.read(binaryData, { type: "array" })
+        const firstSheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[firstSheetName]
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, {
+          defval: "",
+          raw: false,
+          dateNF: "yyyy-mm-dd",
+        })
+        // 监听器 3：看 Excel 到底有没有数据
+        console.log("👉 3. XLSX 提取出的原始行数据:", rows)
+        const headerMap: Record<string, string> = {
+          "姓名": "name",
+          "身份证号": "id_card",
+          "手机号": "phone",
+          "当前状态": "status",
+          "原住地-省份": "original_province",
+          "原住地-城市": "original_city",
+          "原住地-社区": "original_community",
+          "迁入地-省份": "target_province",
+          "迁入地-城市": "target_city",
+          "迁入地-社区": "target_community",
+          "迁入地详细住址": "target_address",
+          "具体住址": "target_address",
+          "年龄": "age",
+          "性别": "gender",
+          "居住开始时间": "residence_start_date",
+          "居住结束时间": "residence_end_date",
+          "夫妻同住": "spouse_living",
+          "夫妻是否同住": "spouse_living",
+          "配偶姓名": "spouse_name",
+          "紧急联系人": "emergency_contact",
+          "紧急联系人关系": "emergency_contact_relation",
+          "紧急联系人电话": "emergency_phone",
+          "健康状况": "health_status",
+          "健康备注": "health_details",
+          "异地医保": "medical_insurance_status",
+          "才艺特长/兴趣爱好": "talents",
+          "才艺特长": "talents",
+          "志愿等级": "volunteer_level",
+        }
+
+        const LEGAL_DB_FIELDS = new Set<string>([
+          "owner_id",
+          "user_id",
+          "name",
+          "id_card",
+          "phone",
+          "gender",
+          "age",
+          "status",
+          "hometown",
+          "original_province",
+          "original_city",
+          "original_community",
+          "target_province",
+          "target_city",
+          "target_community",
+          "target_address",
+          "medical_insurance_status",
+          "volunteer_level",
+          "spouse_living",
+          "spouse_name",
+          "emergency_contact",
+          "emergency_contact_relation",
+          "emergency_phone",
+          "residence_start_date",
+          "residence_end_date",
+          "health_status",
+          "health_details",
+          "talents",
+          "out_account_id",
+          "in_account_id",
+          "is_read",
+        ])
+
+        const chineseKeyRegex = /[\u4e00-\u9fff]/
+        const dateFields = ["residence_start_date", "residence_end_date"]
+
+        const mappedData = rows
+          .map((row) => {
+            return Object.entries(row).reduce<Record<string, any>>((acc, [key, value]) => {
+              const normalizedKey = key.trim()
+              const compactKey = normalizedKey.replace(/\s+/g, "")
+              const mappedKey = headerMap[key] || headerMap[normalizedKey] || headerMap[compactKey] || key
+              acc[mappedKey] = value
+              return acc
+            }, {})
+          })
+          .filter((item) => !!item.name?.toString().trim())
+
+        const dbPayload = mappedData.map((item) => {
+          const matchedInAccount = accounts?.find((acc) => acc.community_name === item.target_community)
+
+          const payloadItem: Record<string, any> = {
+            ...item,
+            volunteer_level: item.volunteer_level?.toString().trim() || "普通候鸟老人",
+            out_account_id: currentAccount?.id ?? null,
+            in_account_id: matchedInAccount?.id ?? null,
+            is_read: false,
+          }
+
+          // 兼容旧模板字段命名，统一收敛到数据库真实列名
+          if (!payloadItem.emergency_phone && item.emergency_contact_phone) {
+            payloadItem.emergency_phone = item.emergency_contact_phone
+          }
+          if (!payloadItem.health_details && item.health_remark) {
+            payloadItem.health_details = item.health_remark
+          }
+
+          payloadItem.age = item.age ? parseInt(item.age, 10) : null
+          const spouseLivingRaw = item.spouse_living?.toString().trim()
+          if (
+            spouseLivingRaw === "是" ||
+            spouseLivingRaw === "true" ||
+            spouseLivingRaw === "1" ||
+            spouseLivingRaw === "Y" ||
+            spouseLivingRaw === "y"
+          ) {
+            payloadItem.spouse_living = "是"
+          } else if (
+            spouseLivingRaw === "否" ||
+            spouseLivingRaw === "false" ||
+            spouseLivingRaw === "0" ||
+            spouseLivingRaw === "N" ||
+            spouseLivingRaw === "n"
+          ) {
+            payloadItem.spouse_living = "否"
+          } else {
+            payloadItem.spouse_living = null
+          }
+
+          dateFields.forEach((key) => {
+            const dateVal = item[key]
+            payloadItem[key] =
+              dateVal && !isNaN(Date.parse(dateVal)) ? new Date(dateVal).toISOString() : null
+          })
+
+          Object.keys(payloadItem).forEach((key) => {
+            if (chineseKeyRegex.test(key) || !LEGAL_DB_FIELDS.has(key)) {
+              delete payloadItem[key]
+            }
+          })
+
+          Object.keys(payloadItem).forEach((key) => {
+            if (payloadItem[key] === "") {
+              payloadItem[key] = null
+            }
+          })
+
+          return payloadItem
+        })
+
+        const { error } = await supabase.from('elderly_info').insert(dbPayload)
+        if (error) {
+          throw error
+        }
+
+        showToast({ description: "批量导入成功", duration: 3000 })
+        onImportSuccess?.()
+      } catch (error) {
+        console.error("批量导入失败:", error)
+        showToast({
+          description: `导入失败：${error instanceof Error ? error.message : "请检查文件格式后重试"}`,
+          duration: 3000
+        })
+      } finally {
+        e.target.value = ""
+      }
+    }
+
+    reader.readAsArrayBuffer(file)
+  }, [accounts, currentAccount?.id, onImportSuccess, showToast])
+
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
@@ -178,13 +373,13 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
       const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase()
       if (ext !== ".xlsx" && ext !== ".xls") {
         showToast({ description: "文件格式不正确，请上传 .xlsx 或 .xls 格式的文件", duration: 3000 })
-        if (fileInputRef.current) fileInputRef.current.value = ""
+        if (importDialogFileInputRef.current) importDialogFileInputRef.current.value = ""
         return
       }
 
       if (!ACCEPTED_EXCEL_TYPES.includes(file.type) && ext !== ".xlsx" && ext !== ".xls") {
         showToast({ description: "文件格式不正确，请上传 .xlsx 或 .xls 格式的文件", duration: 3000 })
-        if (fileInputRef.current) fileInputRef.current.value = ""
+        if (importDialogFileInputRef.current) importDialogFileInputRef.current.value = ""
         return
       }
 
@@ -202,7 +397,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
       showToast({ description: "批量导入成功", duration: 3000 })
       setImportDialogOpen(false)
       setImportFile(null)
-      if (fileInputRef.current) fileInputRef.current.value = ""
+      if (importDialogFileInputRef.current) importDialogFileInputRef.current.value = ""
       // 上传后自动刷新
       fetchElderlyData()
     } catch {
@@ -214,7 +409,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
 
   const handleRemoveFile = useCallback(() => {
     setImportFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    if (importDialogFileInputRef.current) importDialogFileInputRef.current.value = ""
   }, [])
 
   // ------------ 新分页逻辑开始 -------------
@@ -507,14 +702,20 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
           <Plus className="w-4 h-4" />
           添加新信息
         </Button>
+        
+        {/* 全新的直连批量导入按钮 */}
         <Button
           variant="outline"
           className="gap-2 text-primary border-primary hover:bg-primary/10"
-          onClick={() => setImportDialogOpen(true)}
+          onClick={() => {
+            console.log("🚨 按钮被点击，准备触发隐藏的 input");
+            fileInputRef.current?.click();
+          }}
         >
           <Upload className="w-4 h-4" />
           批量导入
         </Button>
+
         <Button
           variant="outline"
           className="gap-2 text-primary border-primary hover:bg-primary/10"
@@ -523,6 +724,15 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
           <Download className="w-4 h-4" />
           下载模板
         </Button>
+
+        {/* 隐藏的真实接收器，只留这一个，乖乖藏好 */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden" 
+          accept=".xlsx, .xls"
+          onChange={handleFileUpload}
+        />
       </div>
 
       {/* ======= 表格区域 (含新分页) ======= */}
@@ -771,7 +981,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
             setImportDialogOpen(false)
             setImportFile(null)
             setIsUploading(false)
-            if (fileInputRef.current) fileInputRef.current.value = ""
+            if (importDialogFileInputRef.current) importDialogFileInputRef.current.value = ""
           }
         }}
       >
@@ -787,7 +997,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
 
           <div className="py-2">
             <input
-              ref={fileInputRef}
+              ref={importDialogFileInputRef}
               type="file"
               accept={ACCEPTED_EXCEL_EXTENSIONS}
               className="hidden"
@@ -797,7 +1007,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
             {!importFile ? (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => importDialogFileInputRef.current?.click()}
                 className="w-full rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors py-10 flex flex-col items-center justify-center gap-3 cursor-pointer group"
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -839,7 +1049,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: 
               onClick={() => {
                 setImportDialogOpen(false)
                 setImportFile(null)
-                if (fileInputRef.current) fileInputRef.current.value = ""
+                if (importDialogFileInputRef.current) importDialogFileInputRef.current.value = ""
               }}
               disabled={isUploading}
             >

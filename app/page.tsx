@@ -60,8 +60,16 @@ function VersionModal({ open, onClose }: { open: boolean, onClose: () => void })
           {/* Main Content: 功能介绍区域 */}
           <div className="px-5 pb-4 pt-1 text-gray-700 text-sm leading-relaxed">
             <ol className="pl-4 space-y-1 list-decimal">
-              <li>当前版本仅支持信息管理板块的功能</li>
-              <li>后续版本将支持更多功能，敬请期待。</li>
+              <ul className="pl-4 space-y-1 list-disc">
+                <span className="font-bold text-[16px] ml-[-24px] mb-2 inline-block">V1.0：候鸟老人信息管理闭环</span>
+                <li><b>全维档案管理</b>：支持候鸟老人信息的增/删/改/查</li>
+                <li><b>智能批量导入</b>：Excel一键上传,自动清洗格式极速入库</li>
+                <li className="mb-4"><b>跨域自动流转</b>：上传数据即刻同步至目标地</li>
+                <div className="flex justify-center my-4">
+                  <hr className="w-3/5 border-gray-350" />
+                </div>
+                <span className="block mt-4">右上角，可切换至“迁入地-社区”账号查验对应数据流转</span>
+              </ul>
             </ol>
           </div>
 
@@ -205,6 +213,7 @@ export default function Home() {
           onAddNew={handleAddNew}
           mode={tableMode}
           refreshTrigger={refreshTrigger}
+          onImportSuccess={() => setRefreshTrigger(prev => prev + 1)}
         />
       )
     }
