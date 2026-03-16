@@ -31,7 +31,7 @@ type ElderlyEditSheetProps = {
   onClose: () => void
   initialData?: ElderlyPerson
   isNew: boolean
-  onSave: (data: Partial<ElderlyPerson>) => void
+  onSave: (data: Partial<ElderlyPerson>) => void | Promise<void>
   person?: ElderlyPerson | null
   trigger?: React.ReactNode
 }
@@ -80,7 +80,6 @@ function mapToDbPayload(formData: Partial<ElderlyPerson>) {
     talents: formData.hobbies,
     volunteer_level: formData.volunteerLevel,
     user_id: formData.userId
-    // owner_id 不做类型限制，见 handleSave 处临时补充
   }
 }
 
@@ -93,8 +92,8 @@ export function ElderlyEditSheet({
   onSave,
   trigger,
 }: ElderlyEditSheetProps) {
-  // 获取当前登录用户，只取 currentAccount
-  const { currentAccount } = useAccount()
+  // 获取当前登录用户及账号列表，用于自动双向路由分发
+  const { currentAccount, accounts } = useAccount()
 
   const [formData, setFormData] = useState<Partial<ElderlyPerson>>({})
   const [error, setError] = useState<{ field: string; msg: string } | null>(null)
@@ -248,12 +247,16 @@ export function ElderlyEditSheet({
     if (isEmpty(formData.hobbies)) { if (block('hobbies')) return }
 
     // === 准备发送至后端的真实数据库字段对象 ===
-    // 用 any，彻底去掉类型限制，允许 owner_id
     let dbPayload: any = { ...mapToDbPayload(formData) }
+    dbPayload.volunteer_level = formData.volunteerLevel || "普通候鸟老人"
 
     // 删除无关字段，防止 TS 报错，防止冗余
     if ("emergency_relation" in dbPayload) {
       delete dbPayload.emergency_relation
+    }
+    // owner_id 已废弃，任何场景都不应进入 payload
+    if ("owner_id" in dbPayload) {
+      delete dbPayload.owner_id
     }
 
     if (isNew) {
@@ -262,7 +265,17 @@ export function ElderlyEditSheet({
         showToast({ description: "无法获取当前账号信息，请重新登录", duration: 3000 })
         return
       }
-      dbPayload.owner_id = currentAccount.id
+
+      // 根据迁入社区智能匹配迁入账号
+      const targetCommunity = formData.targetCommunity
+      const targetAccount = (accounts || []).find((acc: any) => {
+        const communityName = acc?.community_name ?? acc?.communityName
+        return communityName === targetCommunity
+      })
+
+      // 自动双向路由分发：指定迁出方 + 指定迁入方
+      dbPayload.out_account_id = currentAccount.id
+      dbPayload.in_account_id = targetAccount?.id || null
 
       try {
         const { error: insertError, data: insertData } = await supabase
@@ -275,9 +288,9 @@ export function ElderlyEditSheet({
         }
         showToast({ description: "新增成功", duration: 2000 })
         if (Array.isArray(insertData) && insertData[0]) {
-          onSave(insertData[0])
+          await onSave(insertData[0])
         } else {
-          onSave(formData)
+          await onSave(formData)
         }
         setInternalOpen(false)
         onClose?.()
@@ -316,7 +329,7 @@ export function ElderlyEditSheet({
         return
       }
       showToast({ description: "更新成功", duration: 2000 })
-      onSave({ ...updateData, id: trueId })
+      await onSave({ ...updateData, id: trueId })
       setInternalOpen(false)
       onClose?.()
     } catch (err) {

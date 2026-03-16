@@ -1,5 +1,4 @@
 "use client"
-import { ElderlyEditSheet } from './elderly-edit-sheet';
 import { supabase } from "@/lib/supabase"
 import { useAccount } from "@/components/account-context";
 import { useCallback, useMemo, useRef, useState, useEffect } from "react"
@@ -31,6 +30,7 @@ import {
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -46,11 +46,12 @@ type ElderlyTableProps = {
   onEdit: (person: ElderlyPerson) => void
   onAddNew: () => void
   mode: 'in' | 'out'
+  refreshTrigger?: number
 }
 
-export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProps) {
+export function ElderlyTable({ title, onEdit, onAddNew, mode, refreshTrigger }: ElderlyTableProps) {
   // ----- 分页配置与状态 -----
-  const pageSize = 10
+  const pageSize = 7
   const [currentPage, setCurrentPage] = useState(1)
 
   // sourceData 为从云端拉取并经过翻译官转换的全量云端数据
@@ -143,6 +144,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
         healthStatus: item.health_status,
         healthNote: item.health_details || "",
         hobbies: item.talents || "",
+        is_read: item.is_read,
       }));
       setSourceData(translated);
       setPeople(translated);
@@ -150,7 +152,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
       setSourceData([]);
       setPeople([]);
     }
-  }, [currentAccount?.id, mode, showToast]);
+  }, [currentAccount?.id, mode, showToast, refreshTrigger]);
 
   // useEffect 依赖中加入 fetchElderlyData 保证最新
   useEffect(() => {
@@ -219,6 +221,31 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
   // 总数与分页派生
   const totalCount = people.length
   const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
+  const currentStart = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const currentEnd = Math.min(currentPage * pageSize, totalCount)
+
+  const visiblePages = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, idx) => idx + 1)
+    }
+
+    const pages: Array<number | "ellipsis-left" | "ellipsis-right"> = [1]
+    let start = Math.max(2, currentPage - 1)
+    let end = Math.min(totalPages - 1, currentPage + 1)
+
+    // 靠近两端时扩大中间显示区，减少频繁跳动
+    if (currentPage <= 3) end = 4
+    if (currentPage >= totalPages - 2) start = totalPages - 3
+
+    if (start > 2) pages.push("ellipsis-left")
+    for (let page = start; page <= end; page += 1) {
+      pages.push(page)
+    }
+    if (end < totalPages - 1) pages.push("ellipsis-right")
+
+    pages.push(totalPages)
+    return pages
+  }, [currentPage, totalPages])
 
   // 当前页校正
   if (currentPage > totalPages && totalPages > 0) {
@@ -545,8 +572,12 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
                 paginatedData.map((person) => (
                   <TableRow key={person.id}>
                     <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
-                      {/* 修复：此处应使用 person.userId 而非 person.user_id */}
-                      {person.userId}
+                      <div className="flex items-center justify-center">
+                        {mode === "in" && !person.is_read && (
+                          <div className="w-2 h-2 bg-orange-500 rounded-full inline-block mr-2 flex-shrink-0" />
+                        )}
+                        <span>{person.userId}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-center text-sm text-muted-foreground whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
@@ -597,20 +628,20 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
                     </TableCell>
                     <TableCell className="text-center whitespace-nowrap sticky right-0 bg-background z-10 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.1)]">
                       <div className="flex items-center justify-center gap-2">
-                      <ElderlyEditSheet
-                        initialData={person}
-                        trigger={
-                          <Button variant="outline" size="sm">
-                            查看/编辑
-                          </Button>
-                        }
-                        // 👇 下面这 4 个就是补齐的缺失参数
-                        isNew={false}              // 明确告诉组件：这是编辑老数据，不是新增
-                        open={false}           // 因为我们用了 trigger 按钮，开合状态交给组件内部处理即可
-                        onClose={() => {}}         // 塞一个空函数占位，防止 TypeScript 报错
-                        onSave={fetchElderlyData}  // 极其关键：保存成功后，重新调用拉取云端数据的函数，刷新表格！
-                      />
-                        <Button variant="destructive" size="sm" onClick={() => requestDelete(person)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit(person)}
+                          className="text-gray-600 hover:text-primary hover:bg-primary/10"
+                        >
+                          查看/编辑
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => requestDelete(person)}
+                          className="text-red-400 hover:bg-red-50 hover:text-red-500"
+                        >
                           删除
                         </Button>
                       </div>
@@ -632,7 +663,7 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
       {/* Pagination - 新实现 */}
       <div className="flex items-center justify-between mt-4 pt-4 border-t">
         <span className="text-sm text-muted-foreground">
-          共 {people.length} 条数据
+          共 {totalCount} 条数据，当前显示 {currentStart}-{currentEnd}
         </span>
         <div className="flex items-center gap-2">
           {/* 页码数字与切换 */}
@@ -649,9 +680,13 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
                   className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
-              {
-                Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
+              {visiblePages.map((page, index) => (
+                page === "ellipsis-left" || page === "ellipsis-right" ? (
                   <PaginationItem key={page}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={`${page}-${index}`}>
                     <PaginationLink
                       href="#"
                       isActive={page === currentPage}
@@ -669,8 +704,8 @@ export function ElderlyTable({ title, onEdit, onAddNew, mode }: ElderlyTableProp
                       {page}
                     </PaginationLink>
                   </PaginationItem>
-                ))
-              }
+                )
+              ))}
               <PaginationItem>
                 <PaginationNext
                   href="#"

@@ -8,6 +8,7 @@ import { ElderlyEditSheet } from "@/components/elderly-edit-sheet"
 import { MessagePage } from "@/components/message-page"
 import { useAppToast } from "@/components/app-toast"
 import { AccountProvider } from '@/components/account-context';
+import { supabase } from "@/lib/supabase"
 
 // 🚀 版本弹窗组件
 function VersionModal({ open, onClose }: { open: boolean, onClose: () => void }) {
@@ -117,6 +118,7 @@ export type ElderlyPerson = {
   healthStatus?: "完全自理" | "半自理"
   healthNote?: string
   hobbies?: string
+  is_read?: boolean
 }
 
 export default function Home() {
@@ -125,6 +127,7 @@ export default function Home() {
   const [isAddingNew, setIsAddingNew] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
   const [showVersionModal, setShowVersionModal] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const { showToast } = useAppToast()
 
   // 页面加载后（客户端挂载完成）再显示版本弹窗，确保一刷新就能看到
@@ -140,9 +143,25 @@ export default function Home() {
   //   })
   // }, [showToast])
 
-  const handleEdit = (person: ElderlyPerson) => {
+  const handleEdit = async (person: ElderlyPerson) => {
     setEditingPerson(person)
     setIsAddingNew(false)
+
+    if (tableMode === "in" && !person.is_read) {
+      const { error } = await supabase
+        .from("elderly_info")
+        .update({ is_read: true })
+        .eq("id", person.id)
+
+      if (!error) {
+        setRefreshTrigger((prev) => prev + 1)
+      } else {
+        showToast({
+          description: "已进入编辑，但未读状态更新失败：" + error.message,
+          duration: 3000,
+        })
+      }
+    }
   }
 
   const handleAddNew = () => {
@@ -155,9 +174,10 @@ export default function Home() {
     setIsAddingNew(false)
   }
 
-  const handleSave = (data: Partial<ElderlyPerson>) => {
+  const handleSave = async (data: Partial<ElderlyPerson>) => {
     console.log("保存数据:", data)
     handleCloseSheet()
+    setRefreshTrigger((prev) => prev + 1)
   }
 
   const handleMessageClick = () => {
@@ -184,6 +204,7 @@ export default function Home() {
           onEdit={handleEdit}
           onAddNew={handleAddNew}
           mode={tableMode}
+          refreshTrigger={refreshTrigger}
         />
       )
     }
