@@ -28,31 +28,60 @@ function VersionModal({ open, onClose }: { open: boolean, onClose: () => void })
 
         {/* Header */}
           <div className="flex justify-between items-start px-5 pt-5 pb-1">
-            <div>
-              <div className="text-lg font-bold text-gray-900 mb-1 ml-1">版本说明</div>
+            <div className="flex-1 flex flex-col">
+              {/* <div className="text-lg font-bold text-gray-900 mb-1 ml-1">版本说明</div> */}
               <div className="mt-1">
                 {/* 修改1：头部标签，使用更明亮的浅橙背景和深橙文字 */}
-                <span className="inline-block px-2 py-0.5 bg-orange-100 text-xs text-orange-600 rounded font-medium">
-                  Version-1.0
+                <span className="inline-block px-2 py-[2px] bg-orange-100 text-xs text-orange-600 rounded font-medium align-middle">
+                  版本说明
                 </span>
+                {/* <span className="ml-2 text-gray-400 text-xs align-middle">版本说明</span> */}
               </div>
+              {/* ↓↓↓ 控制两者纵向间距的定义 (mt-6) ↓↓↓ */}
+              <span className="font-bold text-[14px] ml-[8px] mb-2 inline-block text-gray-700 mt-2">V1.0-候鸟老人信息管理闭环</span>
+              {/* ↑↑↑ 控制两者纵向间距的定义 (mt-6) ↑↑↑ */}
             </div>
             
             {/* 右上角氛围图 */}
-            <div className="flex-shrink-0 pt-1 pr-1">
-              <svg width="54" height="54" viewBox="0 0 54 54" fill="none">
-                <defs>
-                  {/* 修改2：火箭渐变色统一改为项目主色（Tailwind orange-500 到 orange-300） */}
-                  <linearGradient id="version-rocket" x1="0" y1="0" x2="0" y2="54" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#F97316"/> {/* orange-500 */}
-                    <stop offset="1" stopColor="#FDBA74"/> {/* orange-300 */}
-                  </linearGradient>
-                </defs>
-                <ellipse cx="38" cy="46" rx="8" ry="3.5" fill="#FED7AA" fillOpacity="0.5" /> {/* orange-200 */}
-                <g>
-                  <path d="M25.5 47C29.6421 40.8355 41.1257 24.6688 44.0126 14.2385C44.9284 11.1476 43.2173 8.17206 40.2187 7.19148C37.9855 6.48564 35.5749 7.1515 34.0401 8.91987C27.6965 16.3537 15.8837 30.784 13 39.8286C11.9618 42.9595 14.0752 46.1351 17.4314 46.6282C20.4688 47.0736 23.0142 47.4368 25.5 47Z" fill="url(#version-rocket)" />
-                  <circle cx="37" cy="13" r="2.5" fill="#fff" stroke="#F97316" strokeWidth="1.2"/>
-                </g>
+            <div className="flex-shrink-0 pt-1 pl-8">
+            <svg
+                width="48"
+                height="48"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-12 h-12"
+              >
+                {/* 笔记本外框 */}
+                <rect
+                  x="10"
+                  y="8"
+                  width="28"
+                  height="32"
+                  rx="4"
+                  ry="4"
+                  fill="#FFEDD5"      /* 浅橙背景 */
+                  stroke="#F97316"    /* 主色橙色边框 */
+                  strokeWidth="2"
+                />
+                {/* 左侧装订条 */}
+                <rect
+                  x="12"
+                  y="10"
+                  width="4"
+                  height="28"
+                  rx="2"
+                  fill="#FDBA74"      /* 次级橙色 */
+                />
+                {/* 横线 */}
+                <line x1="19" y1="16" x2="34" y2="16" stroke="#F97316" strokeWidth="1.6" strokeLinecap="round" />
+                <line x1="19" y1="21" x2="34" y2="21" stroke="#F97316" strokeWidth="1.6" strokeLinecap="round" />
+                <line x1="19" y1="26" x2="30" y2="26" stroke="#F97316" strokeWidth="1.6" strokeLinecap="round" />
+                {/* 右下角小折角 */}
+                <path
+                  d="M34 32L30 36H34C35.1046 36 36 35.1046 36 34V30L34 32Z"
+                  fill="#FDBA74"
+                />
               </svg>
             </div>
           </div>
@@ -60,16 +89,16 @@ function VersionModal({ open, onClose }: { open: boolean, onClose: () => void })
           {/* Main Content: 功能介绍区域 */}
           <div className="px-5 pb-4 pt-1 text-gray-700 text-sm leading-relaxed">
             <ol className="pl-4 space-y-1 list-decimal">
-              <ul className="pl-4 space-y-1 list-disc">
-                <span className="font-bold text-[16px] ml-[-24px] mb-2 inline-block">V1.0：候鸟老人信息管理闭环</span>
+              <ol className="pl-4 space-y-1 list-decimal">
+                {/* <span className="font-bold text-[14px] ml-[-24px] mb-2 inline-block">支持功能：</span> */}
                 <li><b>全维档案管理</b>：支持候鸟老人信息的增/删/改/查</li>
                 <li><b>智能批量导入</b>：Excel一键上传,自动清洗格式极速入库</li>
-                <li className="mb-4"><b>跨域自动流转</b>：上传数据即刻同步至目标地</li>
-                <div className="flex justify-center my-4">
-                  <hr className="w-3/5 border-gray-350" />
-                </div>
-                <span className="block mt-4">右上角，可切换至“迁入地-社区”账号查验对应数据流转</span>
-              </ul>
+                <li className="mb-4"><b>跨域自动流转</b>：上传数据即刻同步至对应迁入地社区</li>
+                {/* <div className="flex justify-center my-4">
+                  <hr className="w-3/5 border-gray-500" />
+                </div> */}
+                {/* <span className="block mt-4">右上角，可切换至“迁入地-社区”账号查验对应数据流转</span> */}
+              </ol>
             </ol>
           </div>
 
@@ -81,7 +110,7 @@ function VersionModal({ open, onClose }: { open: boolean, onClose: () => void })
               onClick={onClose}
               style={{ border: "none" }}
             >
-              我已知晓
+              我知道了，去体验
             </button>
           </div>
       </div>
