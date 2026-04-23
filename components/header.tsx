@@ -37,6 +37,8 @@ export function Header({
         top: rect.bottom + 10,
         left: rect.left + rect.width / 2,
       });
+    } else if (!showGuideBubble) {
+      setBubblePos(null);
     }
   }, [showGuideBubble]);
 
@@ -56,6 +58,7 @@ export function Header({
           <DropdownMenuTrigger asChild>
             <button
               ref={userBtnRef}
+              type="button"
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <User className="w-4 h-4" />
@@ -116,6 +119,7 @@ export function Header({
 
         {/* Notifications */}
         <button
+          type="button"
           onClick={onMessageClick}
           className="relative flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
@@ -138,7 +142,7 @@ export function Header({
           />
           <div
             className="fixed z-50 bg-white rounded-xl shadow-2xl p-4 w-72 -translate-x-1/2"
-            style={{ top: `${bubblePos!.top}px`, left: `${bubblePos!.left}px` }}
+            style={{ top: bubblePos.top, left: bubblePos.left }}
           >
             {/* 向上的三角箭头 */}
             <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-white" />
