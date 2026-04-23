@@ -26,6 +26,23 @@ import {
 // 获取当前登录用户
 import { useAccount } from "@/components/account-context"
 
+const SELECT_PLACEHOLDER_LOADING = "__loading__"
+const SELECT_PLACEHOLDER_EMPTY = "__no_options__"
+
+const isNonEmptySelectValue = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0
+
+const sanitizeSelectOptions = (values: unknown[]): string[] => {
+  const deduped = new Set<string>()
+  values.forEach((value) => {
+    if (isNonEmptySelectValue(value)) deduped.add(value.trim())
+  })
+  return Array.from(deduped)
+}
+
+const toSafeSelectValue = (value: unknown): string | undefined =>
+  isNonEmptySelectValue(value) ? value.trim() : undefined
+
 type ElderlyEditSheetProps = {
   open: boolean
   onClose: () => void
@@ -152,57 +169,55 @@ export function ElderlyEditSheet({
 
   // 下拉联动
   const originalProvinces = useMemo(() => {
-    const set = new Set<string>()
-    sysLocations.forEach(item => { if(item.province) set.add(item.province) })
-    return Array.from(set)
+    return sanitizeSelectOptions(sysLocations.map((item) => item?.province))
   }, [sysLocations])
 
   const originalCities = useMemo(() => {
     if (!formData.originalProvince) return []
-    const set = new Set<string>()
-    sysLocations
-      .filter(item => item.province === formData.originalProvince)
-      .forEach(item => { if(item.city) set.add(item.city) })
-    return Array.from(set)
+    return sanitizeSelectOptions(
+      sysLocations
+        .filter((item) => item.province === formData.originalProvince)
+        .map((item) => item?.city)
+    )
   }, [formData.originalProvince, sysLocations])
 
   const originalCommunities = useMemo(() => {
     if (!formData.originalProvince || !formData.originalCity) return []
-    const set = new Set<string>()
-    sysLocations
-      .filter(item =>
-        item.province === formData.originalProvince &&
-        item.city === formData.originalCity
-      )
-      .forEach(item => { if(item.community) set.add(item.community) })
-    return Array.from(set)
+    return sanitizeSelectOptions(
+      sysLocations
+        .filter(
+          (item) =>
+            item.province === formData.originalProvince &&
+            item.city === formData.originalCity
+        )
+        .map((item) => item?.community)
+    )
   }, [formData.originalProvince, formData.originalCity, sysLocations])
 
   const targetProvinces = useMemo(() => {
-    const set = new Set<string>()
-    sysLocations.forEach(item => { if(item.province) set.add(item.province) })
-    return Array.from(set)
+    return sanitizeSelectOptions(sysLocations.map((item) => item?.province))
   }, [sysLocations])
 
   const targetCities = useMemo(() => {
     if (!formData.targetProvince) return []
-    const set = new Set<string>()
-    sysLocations
-      .filter(item => item.province === formData.targetProvince)
-      .forEach(item => { if(item.city) set.add(item.city) })
-    return Array.from(set)
+    return sanitizeSelectOptions(
+      sysLocations
+        .filter((item) => item.province === formData.targetProvince)
+        .map((item) => item?.city)
+    )
   }, [formData.targetProvince, sysLocations])
 
   const targetCommunities = useMemo(() => {
     if (!formData.targetProvince || !formData.targetCity) return []
-    const set = new Set<string>()
-    sysLocations
-      .filter(item =>
-        item.province === formData.targetProvince &&
-        item.city === formData.targetCity
-      )
-      .forEach(item => { if(item.community) set.add(item.community) })
-    return Array.from(set)
+    return sanitizeSelectOptions(
+      sysLocations
+        .filter(
+          (item) =>
+            item.province === formData.targetProvince &&
+            item.city === formData.targetCity
+        )
+        .map((item) => item?.community)
+    )
   }, [formData.targetProvince, formData.targetCity, sysLocations])
 
   useEffect(() => {
@@ -615,7 +630,7 @@ export function ElderlyEditSheet({
                   className="w-28"
                 />
                 <Select
-                  value={formData.emergencyRelation || "子女"}
+                  value={toSafeSelectValue(formData.emergencyRelation) ?? "子女"}
                   onValueChange={(value) => {
                     setError(null)
                     setFormData({
@@ -778,7 +793,7 @@ export function ElderlyEditSheet({
               <div className="flex items-center gap-2">
                 {/* 省份动态 */}
                 <Select
-                  value={formData.originalProvince || ""}
+                  value={toSafeSelectValue(formData.originalProvince)}
                   onValueChange={value => {
                     setError(null)
                     setFormData({
@@ -794,7 +809,7 @@ export function ElderlyEditSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {originalProvinces.length === 0 && (
-                      <SelectItem value="" disabled>加载中…</SelectItem>
+                      <SelectItem value={SELECT_PLACEHOLDER_LOADING} disabled>加载中…</SelectItem>
                     )}
                     {originalProvinces.map(p => (
                       <SelectItem key={p} value={p}>
@@ -805,7 +820,7 @@ export function ElderlyEditSheet({
                 </Select>
                 {/* 城市动态 */}
                 <Select
-                  value={formData.originalCity || ""}
+                  value={toSafeSelectValue(formData.originalCity)}
                   onValueChange={value => {
                     setError(null)
                     setFormData({
@@ -821,7 +836,7 @@ export function ElderlyEditSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {formData.originalProvince && originalCities.length === 0 && (
-                      <SelectItem value="" disabled>无可选城市</SelectItem>
+                      <SelectItem value={SELECT_PLACEHOLDER_EMPTY} disabled>无可选城市</SelectItem>
                     )}
                     {originalCities.map(c => (
                       <SelectItem key={c} value={c}>
@@ -832,7 +847,7 @@ export function ElderlyEditSheet({
                 </Select>
                 {/* 社区动态 */}
                 <Select
-                  value={formData.originalCommunity || ""}
+                  value={toSafeSelectValue(formData.originalCommunity)}
                   onValueChange={value => {
                     setError(null)
                     setFormData({
@@ -847,7 +862,7 @@ export function ElderlyEditSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {formData.originalProvince && formData.originalCity && originalCommunities.length === 0 && (
-                      <SelectItem value="" disabled>无可选社区</SelectItem>
+                      <SelectItem value={SELECT_PLACEHOLDER_EMPTY} disabled>无可选社区</SelectItem>
                     )}
                     {originalCommunities.map(c => (
                       <SelectItem key={c} value={c}>
@@ -874,7 +889,7 @@ export function ElderlyEditSheet({
               <div className="flex items-center gap-2">
                 {/* 省份动态 */}
                 <Select
-                  value={formData.targetProvince || ""}
+                  value={toSafeSelectValue(formData.targetProvince)}
                   onValueChange={value => {
                     setError(null)
                     setFormData({
@@ -890,7 +905,7 @@ export function ElderlyEditSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {targetProvinces.length === 0 && (
-                      <SelectItem value="" disabled>加载中…</SelectItem>
+                      <SelectItem value={SELECT_PLACEHOLDER_LOADING} disabled>加载中…</SelectItem>
                     )}
                     {targetProvinces.map(p => (
                       <SelectItem key={p} value={p}>
@@ -901,7 +916,7 @@ export function ElderlyEditSheet({
                 </Select>
                 {/* 城市动态 */}
                 <Select
-                  value={formData.targetCity || ""}
+                  value={toSafeSelectValue(formData.targetCity)}
                   onValueChange={value => {
                     setError(null)
                     setFormData({
@@ -917,7 +932,7 @@ export function ElderlyEditSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {formData.targetProvince && targetCities.length === 0 && (
-                      <SelectItem value="" disabled>无可选城市</SelectItem>
+                      <SelectItem value={SELECT_PLACEHOLDER_EMPTY} disabled>无可选城市</SelectItem>
                     )}
                     {targetCities.map(c => (
                       <SelectItem key={c} value={c}>
@@ -928,7 +943,7 @@ export function ElderlyEditSheet({
                 </Select>
                 {/* 社区动态 */}
                 <Select
-                  value={formData.targetCommunity || ""}
+                  value={toSafeSelectValue(formData.targetCommunity)}
                   onValueChange={value => {
                     setError(null)
                     setFormData({
@@ -943,7 +958,7 @@ export function ElderlyEditSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {formData.targetProvince && formData.targetCity && targetCommunities.length === 0 && (
-                      <SelectItem value="" disabled>无可选社区</SelectItem>
+                      <SelectItem value={SELECT_PLACEHOLDER_EMPTY} disabled>无可选社区</SelectItem>
                     )}
                     {targetCommunities.map(c => (
                       <SelectItem key={c} value={c}>
